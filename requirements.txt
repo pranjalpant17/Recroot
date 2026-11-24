@@ -1,0 +1,36 @@
+# Recroot — Python Dependencies
+# Step 4 of the Phase 1 build.
+#
+# Install with:
+#   pip install -r requirements.txt
+
+# --- Web framework -------------------------------------------------
+Flask~=3.0
+Werkzeug~=3.0
+
+# --- Forms & CSRF protection (login, job creation, application forms)
+Flask-WTF~=1.2
+email-validator~=2.1        # required by WTForms' Email() validator
+
+# --- MySQL driver ----------------------------------------------------
+# Pure-Python driver, no MySQL C client libraries needed to install.
+PyMySQL~=1.1
+cryptography~=42.0          # required by PyMySQL for MySQL 8's default
+                             # caching_sha2_password / sha256_password auth
+
+# --- Resume parsing (modules/resume_parser.py) ------------------------
+pdfplumber~=0.11            # PDF text extraction, handles multi-column
+                             # resume layouts better than bare PyPDF2
+pypdf>=4.0                  # used by services/resume_parser.py
+                             # (extract_text_from_pdf imports it lazily)
+
+# --- Duplicate detection (modules/duplicate_detector.py) --------------
+datasketch~=1.6             # MinHash / LSH for near-duplicate resume
+                             # text similarity (Section 6, Level 2)
+
+# --- Consistency checking (modules/consistency_checker.py) ------------
+python-dateutil~=2.9        # flexible parsing of dates found in resume
+                             # text, for timeline-inconsistency checks
+
+# --- Configuration -----------------------------------------------------
+python-dotenv~=1.0          # optional local .env loading (see config.py)
