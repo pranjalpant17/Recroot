@@ -1,0 +1,765 @@
+/* ============================================================
+   Recroot — Recruiter Stylesheet
+   Step 22 of the Phase 1 build.
+
+   Loaded on top of base.css for every templates/recruiter/*.html
+   page. Reuses .stat-grid / .stat-card / .card-header / .status-tag
+   from admin.css's conventions (redefined here so recruiter.css
+   has no dependency on admin.css being loaded).
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   Dashboard stat cards (same convention as admin.css)
+   ------------------------------------------------------------ */
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.stat-card {
+    text-align: left;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+.stat-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+
+.stat-sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 6px;
+}
+
+.card-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.card-header h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.card-header a {
+    font-size: 13px;
+}
+
+/* ------------------------------------------------------------
+   Jobs page — two-column layout: list + create form
+   ------------------------------------------------------------ */
+
+.recruiter-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .recruiter-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 500px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+/* ------------------------------------------------------------
+   Status tags (shared convention with admin.css)
+   ------------------------------------------------------------ */
+
+.status-tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    text-transform: capitalize;
+}
+
+.status-tag-open,
+.status-tag-shortlisted {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.status-tag-closed,
+.status-tag-rejected {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.status-tag-pending {
+    background: #f1f2f5;
+    color: var(--color-text-muted);
+}
+
+/* Step 39: remaining hiring stages. interview = info blue, offer = amber,
+   hired = solid green (the only filled tag, so a final win stands out),
+   withdrawn = outlined grey so it can't be mistaken for pending. */
+.status-tag-interview {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.status-tag-offer {
+    background: #fff4d6;
+    color: #8a5a00;
+}
+
+.status-tag-hired {
+    background: var(--color-success);
+    color: #fff;
+}
+
+.status-tag-withdrawn {
+    background: #fff;
+    color: var(--color-text-muted);
+    box-shadow: inset 0 0 0 1px #c3c8d1;
+}
+
+/* ------------------------------------------------------------
+   Candidates list — filter bar, score pill, flag tags
+   ------------------------------------------------------------ */
+
+.filter-bar {
+    padding: 14px 20px;
+}
+
+.filter-form {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.filter-form > div {
+    min-width: 180px;
+}
+
+.filter-form label {
+    margin-bottom: 4px;
+}
+
+.candidate-email {
+    font-size: 12px;
+}
+
+.score-pill {
+    display: inline-block;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.score-pill-lg {
+    font-size: 22px;
+    padding: 8px 18px;
+}
+
+.flag-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-right: 4px;
+    white-space: nowrap;
+}
+
+.flag-duplicate {
+    background: #fdf0e0;
+    color: #b5540d;
+}
+
+.flag-consistency {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.flag-clear {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+/* ------------------------------------------------------------
+   Candidate detail page
+   ------------------------------------------------------------ */
+
+.back-link {
+    display: inline-block;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.detail-header-score {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.detail-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .detail-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.score-table td {
+    padding: 8px 4px;
+}
+
+.score-cell {
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.score-total-row td {
+    border-top: 2px solid var(--color-border);
+    border-bottom: none;
+    font-weight: 700;
+    padding-top: 12px;
+}
+
+.skills-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 500px) {
+    .skills-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+.skills-subhead {
+    font-size: 13px;
+    margin: 0 0 8px 0;
+}
+
+.skills-matched {
+    color: var(--color-success);
+}
+
+.skills-missing {
+    color: var(--color-error);
+}
+
+.skill-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.skill-chip {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: var(--radius);
+    display: inline-block;
+}
+
+.skill-chip-matched {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.skill-chip-missing {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.review-block {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.review-block:last-child {
+    border-bottom: none;
+}
+
+.review-note {
+    margin: 8px 0 0 0;
+    font-size: 13px;
+}
+
+.decision-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn-success {
+    background: var(--color-success);
+    color: #fff;
+}
+
+.btn-success:hover {
+    opacity: 0.9;
+    text-decoration: none;
+}
+
+.btn-danger {
+    background: var(--color-error);
+    color: #fff;
+}
+
+.btn-danger:hover {
+    opacity: 0.9;
+    text-decoration: none;
+}
+
+.version-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+
+/* ------------------------------------------------------------
+   Step 33 - background processing states
+   (queued / processing / failed / not scored)
+   ------------------------------------------------------------ */
+
+.score-pill-processing {
+    background: #f1f2f5;
+    color: var(--color-text-muted);
+}
+
+.score-pill-failed {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.processing-notice {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    margin: 0;
+}
+
+.processing-notice-failed {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.flag-pending {
+    background: #f1f2f5;
+    color: var(--color-text-muted);
+}
+
+
+/* ------------------------------------------------------------
+   Step 35 - recruiter dashboard update
+   (ranks, job summaries, top candidates, withdrawn state)
+   ------------------------------------------------------------ */
+
+.rank-badge {
+    display: inline-block;
+    min-width: 28px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--color-info-bg);
+    color: var(--color-info);
+    font-variant-numeric: tabular-nums;
+}
+
+.row-withdrawn {
+    opacity: 0.65;
+}
+
+.withdrawn-notice {
+    margin-bottom: 16px;
+}
+
+.summary-note {
+    font-size: 12px;
+    margin: 12px 0 0 0;
+}
+
+.top-job {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.top-job:last-of-type {
+    border-bottom: none;
+}
+
+.top-job-title {
+    font-size: 14px;
+    margin: 0 0 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.top-table td {
+    padding: 6px 8px 6px 0;
+}
+
+.top-rank {
+    width: 48px;
+}
+
+.rank-line {
+    font-size: 13px;
+    margin: 12px 0 0 0;
+}
+
+
+/* ------------------------------------------------------------
+   Step 39 - Kanban board, stage counts, small buttons
+   ------------------------------------------------------------ */
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-height: 32px;
+}
+
+.btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-color: var(--color-border);
+}
+
+.btn-secondary:hover {
+    background: var(--color-bg);
+    text-decoration: none;
+}
+
+.board-link-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 16px 0;
+}
+
+.board-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    margin-bottom: 12px;
+}
+
+.board-intro {
+    margin: 0;
+}
+
+.board-job-form {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.board-job-form select {
+    min-width: 220px;
+}
+
+.board-links {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+}
+
+.board-job-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Five columns when there is room, wrapping down to one column on a phone. */
+.board-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+
+.board-column {
+    background: #eef0f4;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 10px;
+    min-width: 0;
+}
+
+.board-column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.board-count {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border-radius: 999px;
+    padding: 1px 9px;
+    font-variant-numeric: tabular-nums;
+}
+
+.board-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.board-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    padding: 10px 12px;
+    min-width: 0;
+}
+
+.board-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.board-card-name {
+    font-weight: 600;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+.board-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.board-card-meta .flag-tag {
+    margin-right: 0;
+}
+
+.board-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.board-actions form {
+    margin: 0;
+}
+
+.board-final {
+    font-size: 12px;
+    margin: 10px 0 0 0;
+}
+
+.board-empty {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    text-align: center;
+    margin: 0;
+    padding: 8px 0;
+}
+
+.board-rejected {
+    margin-top: 16px;
+    padding: 12px 16px;
+}
+
+.board-rejected summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    min-height: 32px;
+}
+
+.board-rejected-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.board-rejected-list .board-card {
+    box-shadow: none;
+}
+
+@media (max-width: 500px) {
+    .btn-sm {
+        min-height: 40px;
+        padding: 9px 12px;
+    }
+
+    .board-job-form,
+    .board-job-form > div,
+    .board-job-form select {
+        width: 100%;
+    }
+}
+
+/* Stage counts (recruiter + candidate dashboards) */
+
+.pipeline-stages {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 12px;
+}
+
+.pipeline-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.pipeline-count {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* Step 39: prevent Kanban board overflow on phones */
+@media (max-width: 500px) {
+    .board-header > div {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .board-intro {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .board-job-form {
+        width: 100%;
+        min-width: 0;
+        align-items: stretch;
+    }
+
+    .board-job-form > div,
+    .board-job-form select {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .board-grid {
+        width: 100%;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .board-column,
+    .board-cards,
+    .board-card {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .board-card-top,
+    .board-card-meta,
+    .board-actions {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .board-card-name {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .board-actions form {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .board-actions .btn {
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    .board-rejected-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

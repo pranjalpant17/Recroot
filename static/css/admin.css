@@ -1,0 +1,346 @@
+/* ============================================================
+   Recroot — Admin Stylesheet
+   Step 16 of the Phase 1 build.
+
+   Loaded on top of base.css for every templates/admin/*.html page.
+   Adds: stat cards (dashboard), the two-column create/list layout
+   (users), role/status tags, and pagination controls (audit log).
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   Dashboard stat cards
+   ------------------------------------------------------------ */
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.stat-card {
+    text-align: left;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+.stat-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+
+.stat-sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 6px;
+}
+
+.card-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.card-header h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.card-header a {
+    font-size: 13px;
+}
+
+/* ------------------------------------------------------------
+   Users page — two-column layout: list + create form
+   ------------------------------------------------------------ */
+
+.admin-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .admin-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.btn-link-danger {
+    background: none;
+    border: none;
+    color: var(--color-error);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.btn-link-danger:hover {
+    text-decoration: underline;
+}
+
+/* ------------------------------------------------------------
+   Role / status tags (shared across admin pages)
+   ------------------------------------------------------------ */
+
+.role-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-left: 6px;
+}
+
+.role-tag-admin {
+    background: #fdeee0;
+    color: #b5540d;
+}
+
+.role-tag-recruiter {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.role-tag-candidate {
+    background: #eef3e9;
+    color: #4d7c2a;
+}
+
+.status-tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    text-transform: capitalize;
+}
+
+.status-tag-open {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.status-tag-closed {
+    background: #eceef1;
+    color: var(--color-text-muted);
+}
+
+/* ------------------------------------------------------------
+   Pagination (audit log)
+   ------------------------------------------------------------ */
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 16px;
+    font-size: 14px;
+}
+
+.pagination-disabled {
+    color: #c4c9d1;
+}
+
+
+/* ------------------------------------------------------------
+   Jobs page - Open/Close actions and Create Job form
+   (reuses .btn-link-danger above; .btn-link and .form-row follow
+   the same definitions as recruiter.css)
+   ------------------------------------------------------------ */
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 500px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Collapsible create form: <summary> is styled as a primary button */
+.create-job > summary {
+    list-style: none;
+}
+
+.create-job > summary::-webkit-details-marker {
+    display: none;
+}
+
+.create-job > summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.create-job-form {
+    margin-top: 12px;
+    max-width: 720px;
+}
+
+.field-hint {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}
+
+
+/* ------------------------------------------------------------
+   Step 42 - Worker Monitor and Analytics pages
+   (uses the existing .stat-grid / .stat-card / .card-header /
+   .status-tag / .field-hint rules above)
+   ------------------------------------------------------------ */
+
+.page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-bottom: 16px;
+}
+
+.page-head h1 {
+    margin-bottom: 4px;
+}
+
+.page-head p {
+    margin: 0;
+}
+
+.refresh-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Wide tables scroll inside their card instead of the whole page */
+.table-scroll {
+    overflow-x: auto;
+}
+
+td.num {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.stat-of {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+/* Worker state tags */
+.status-tag-running {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.status-tag-stopped,
+.status-tag-not_initialised,
+.status-tag-unavailable {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.monitor-state {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+}
+
+.monitor-warnings {
+    margin: 12px 0 0 0;
+    padding: 10px 14px 10px 30px;
+    background: var(--color-error-bg);
+    color: var(--color-error);
+    border-radius: var(--radius);
+    font-size: 14px;
+}
+
+/* Meters (queue fill, worker utilisation) */
+.meter {
+    height: 8px;
+    margin-top: 10px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.meter-fill {
+    height: 100%;
+    background: var(--color-primary);
+}
+
+.meter-fill.meter-full {
+    background: var(--color-error);
+}
+
+/* Inline bars in analytics tables */
+.bar-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 140px;
+}
+
+.bar {
+    flex: 1 1 auto;
+    height: 8px;
+    background: var(--color-bg);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    background: var(--color-primary);
+}

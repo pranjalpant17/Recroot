@@ -1,0 +1,873 @@
+/* ============================================================
+   Recroot — Candidate Stylesheet
+   Step 28 of the Phase 1 build.
+
+   Loaded on top of base.css for every templates/candidate/*.html
+   page. Redefines the shared conventions (.stat-grid, .status-tag,
+   .card-header, .score-pill, .score-table, .skills-columns,
+   .skill-chip) independently, same approach as recruiter.css, so
+   this stylesheet has no dependency on admin.css or recruiter.css
+   being loaded.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   Dashboard stat cards
+   ------------------------------------------------------------ */
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.stat-card {
+    text-align: left;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+.stat-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+
+.stat-sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 6px;
+}
+
+.card-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.card-header h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.card-header a {
+    font-size: 13px;
+}
+
+/* ------------------------------------------------------------
+   Dashboard: overview + profile form, two-column
+   ------------------------------------------------------------ */
+
+.detail-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .detail-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.profile-password-hint {
+    font-size: 12px;
+    margin: 4px 0 12px 0;
+}
+
+/* ------------------------------------------------------------
+   Resume versions: two-column list + upload form
+   ------------------------------------------------------------ */
+
+.candidate-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .candidate-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.upload-hint {
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+.btn-link-danger {
+    background: none;
+    border: none;
+    color: var(--color-error);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.btn-link-danger:hover {
+    text-decoration: underline;
+}
+
+/* ------------------------------------------------------------
+   Status tags / score pill (shared convention across roles)
+   ------------------------------------------------------------ */
+
+.status-tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    text-transform: capitalize;
+}
+
+.status-tag-shortlisted {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.status-tag-rejected {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.status-tag-pending {
+    background: #f1f2f5;
+    color: var(--color-text-muted);
+}
+
+.score-pill {
+    display: inline-block;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.score-pill-lg {
+    font-size: 20px;
+    padding: 6px 14px;
+}
+
+/* ------------------------------------------------------------
+   Notice banner (e.g. "upload a resume before applying")
+   ------------------------------------------------------------ */
+
+.notice-banner {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+/* ------------------------------------------------------------
+   Job browsing cards
+   ------------------------------------------------------------ */
+
+.job-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.job-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.job-card-header h2 {
+    font-size: 17px;
+}
+
+.job-description {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    margin: 8px 0;
+}
+
+.job-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-bottom: 10px;
+}
+
+.job-skills {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.job-skills-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-right: 4px;
+}
+
+.skill-chip {
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: var(--radius);
+    display: inline-block;
+}
+
+.skill-chip-required {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.skill-chip-preferred {
+    background: #f1f2f5;
+    color: var(--color-text-muted);
+}
+
+.skill-chip-matched {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.skill-chip-missing {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.apply-form {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.apply-form select {
+    flex: 1;
+}
+
+.apply-form .btn {
+    white-space: nowrap;
+}
+
+/* ------------------------------------------------------------
+   Applications list + inline score breakdown
+   ------------------------------------------------------------ */
+
+.application-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.application-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.application-card-header h2 {
+    font-size: 17px;
+    margin-bottom: 2px;
+}
+
+.application-card-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.score-table td {
+    padding: 6px 10px 6px 0;
+    border-bottom: none;
+    font-size: 13px;
+}
+
+.score-cell {
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding-right: 24px !important;
+}
+
+.skills-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 500px) {
+    .skills-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+.skills-subhead {
+    font-size: 13px;
+    margin: 0 0 8px 0;
+}
+
+.skills-matched {
+    color: var(--color-success);
+}
+
+.skills-missing {
+    color: var(--color-error);
+}
+
+.skill-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.resume-used-note {
+    margin-top: 14px;
+    font-size: 13px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 12px;
+}
+
+
+/* ------------------------------------------------------------
+   Step 33 - background processing states
+   (queued / processing / failed / not scored)
+   ------------------------------------------------------------ */
+
+.score-pill-processing {
+    background: #f1f2f5;
+    color: var(--color-text-muted);
+}
+
+.score-pill-failed {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}/* ============================================================
+   Recroot — Candidate Stylesheet
+   Step 28 of the Phase 1 build.
+
+   Loaded on top of base.css for every templates/candidate/*.html
+   page. Redefines the shared conventions (.stat-grid, .status-tag,
+   .card-header, .score-pill, .score-table, .skills-columns,
+   .skill-chip) independently, same approach as recruiter.css, so
+   this stylesheet has no dependency on admin.css or recruiter.css
+   being loaded.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   Dashboard stat cards
+   ------------------------------------------------------------ */
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.stat-card {
+    text-align: left;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+.stat-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+
+.stat-sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 6px;
+}
+
+.card-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.card-header h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.card-header a {
+    font-size: 13px;
+}
+
+/* ------------------------------------------------------------
+   Dashboard: overview + profile form, two-column
+   ------------------------------------------------------------ */
+
+.detail-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .detail-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.profile-password-hint {
+    font-size: 12px;
+    margin: 4px 0 12px 0;
+}
+
+/* ------------------------------------------------------------
+   Resume versions: two-column list + upload form
+   ------------------------------------------------------------ */
+
+.candidate-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .candidate-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.upload-hint {
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+.btn-link-danger {
+    background: none;
+    border: none;
+    color: var(--color-error);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.btn-link-danger:hover {
+    text-decoration: underline;
+}
+
+/* ------------------------------------------------------------
+   Status tags / score pill (shared convention across roles)
+   ------------------------------------------------------------ */
+
+.status-tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    text-transform: capitalize;
+}
+
+.status-tag-shortlisted {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.status-tag-rejected {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.status-tag-pending {
+    background: #f1f2f5;
+    color: var(--color-text-muted);
+}
+
+/* Step 39: remaining hiring stages (same colours as recruiter.css). */
+.status-tag-interview {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.status-tag-offer {
+    background: #fff4d6;
+    color: #8a5a00;
+}
+
+.status-tag-hired {
+    background: var(--color-success);
+    color: #fff;
+}
+
+.status-tag-withdrawn {
+    background: #fff;
+    color: var(--color-text-muted);
+    box-shadow: inset 0 0 0 1px #c3c8d1;
+}
+
+.score-pill {
+    display: inline-block;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.score-pill-lg {
+    font-size: 20px;
+    padding: 6px 14px;
+}
+
+/* ------------------------------------------------------------
+   Notice banner (e.g. "upload a resume before applying")
+   ------------------------------------------------------------ */
+
+.notice-banner {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+/* ------------------------------------------------------------
+   Job browsing cards
+   ------------------------------------------------------------ */
+
+.job-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.job-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.job-card-header h2 {
+    font-size: 17px;
+}
+
+.job-description {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    margin: 8px 0;
+}
+
+.job-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-bottom: 10px;
+}
+
+.job-skills {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.job-skills-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-right: 4px;
+}
+
+.skill-chip {
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: var(--radius);
+    display: inline-block;
+}
+
+.skill-chip-required {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.skill-chip-preferred {
+    background: #f1f2f5;
+    color: var(--color-text-muted);
+}
+
+.skill-chip-matched {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.skill-chip-missing {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.apply-form {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.apply-form select {
+    flex: 1;
+}
+
+.apply-form .btn {
+    white-space: nowrap;
+}
+
+/* ------------------------------------------------------------
+   Applications list + inline score breakdown
+   ------------------------------------------------------------ */
+
+.application-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.application-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.application-card-header h2 {
+    font-size: 17px;
+    margin-bottom: 2px;
+}
+
+.application-card-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.score-table td {
+    padding: 6px 10px 6px 0;
+    border-bottom: none;
+    font-size: 13px;
+}
+
+.score-cell {
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding-right: 24px !important;
+}
+
+.skills-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 500px) {
+    .skills-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+.skills-subhead {
+    font-size: 13px;
+    margin: 0 0 8px 0;
+}
+
+.skills-matched {
+    color: var(--color-success);
+}
+
+.skills-missing {
+    color: var(--color-error);
+}
+
+.skill-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.resume-used-note {
+    margin-top: 14px;
+    font-size: 13px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 12px;
+}
+
+
+/* ------------------------------------------------------------
+   Step 33 - background processing states
+   (queued / processing / failed / not scored)
+   ------------------------------------------------------------ */
+
+.score-pill-processing {
+    background: #f1f2f5;
+    color: var(--color-text-muted);
+}
+
+.score-pill-failed {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.processing-notice {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    margin: 0;
+}
+
+.processing-notice-failed {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+
+/* ------------------------------------------------------------
+   Step 39 - stage counts and application timeline
+   ------------------------------------------------------------ */
+
+.pipeline-stages {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 12px;
+}
+
+.pipeline-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.pipeline-count {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.summary-note {
+    font-size: 12px;
+    margin: 12px 0 0 0;
+}
+
+.stage-timeline {
+    border-top: 1px solid var(--color-border);
+    padding-top: 12px;
+}
+
+.timeline-gap {
+    font-size: 13px;
+    margin: 0 0 8px 0;
+}
+
+.timeline-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.timeline-item {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    padding-bottom: 12px;
+}
+
+/* the vertical line joining the dots */
+.timeline-item:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 14px;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-border);
+}
+
+.timeline-dot {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    margin-top: 6px;
+    border-radius: 50%;
+    background: var(--color-primary);
+}
+
+.timeline-body {
+    min-width: 0;
+}
+
+.timeline-event {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    font-size: 13px;
+}
+
+.timeline-time {
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.processing-notice {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    margin: 0;
+}
+
+.processing-notice-failed {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
