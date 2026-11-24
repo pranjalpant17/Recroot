@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Candidates — Recroot{% endblock %}
+
+{% block extra_css %}
+{% from "_processing.html" import auto_refresh %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/recruiter.css') }}">
+{{ auto_refresh(applications) }}
+{% endblock %}
+
+{% block content %}
+{% from "_processing.html" import score_pill %}
+<h1>Candidates{% if selected_job %} — {{ selected_job.title }}{% endif %}{% if status_filter == 'withdrawn' %} (Withdrawn){% endif %}</h1>
+<p class="text-muted mb-16">
+    {% if status_filter == 'withdrawn' %}
+    Applications the candidate withdrew. They are not ranked and their status can't be changed.
+    {% else %}
+    Ranked by match score within each job; candidates with the same score share a rank.
+    Applications still being analysed, or that could not be scored, are listed after the ranked ones.
+    Withdrawn applications are hidden — use the Withdrawn filter to see them.
+    {% endif %}
+    {% if not selected_job %}Showing candidates across all of your jobs.{% endif %}
+</p>
+
+<p class="board-link-row">
+    {% if selected_job %}
+    <a class="btn btn-primary btn-sm" href="{{ url_for('recruiter.board', job_id=selected_job.id) }}">Open Kanban board for this job →</a>
+    {% else %}
+    <a class="btn btn-primary btn-sm" href="{{ url_for('recruiter.board') }}">Kanban board →</a>
+    <span class="text-muted">Pick a job there, or select a job below first.</span>
+    {% endif %}
+</p>
+
+<div class="filter-bar card">
+    <form method="GET" action="{{ url_for('recruiter.candidates') }}" class="filter-form">
+        <div>
+            <label for="job_id">Job</label>
+            <select id="job_id" name="job_id" onchange="this.form.submit()">
+                <option value="">All jobs</option>
+                {% for job in own_jobs %}
+                <option value="{{ job.id }}" {% if selected_job and selected_job.id == job.id %}selected{% endif %}>
+                    {{ job.title }} ({{ job.status }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="status">Status</label>
+            <select id="status" name="status" onchange="this.form.submit()">
+                <option value="" {% if not status_filter %}selected{% endif %}>All active</option>
+                <option value="pending" {% if status_filter == "pending" %}selected{% endif %}>Pending</option>
+                <option value="shortlisted" {% if status_filter == "shortlisted" %}selected{% endif %}>Shortlisted</option>
+                <option value="rejected" {% if status_filter == "rejected" %}selected{% endif %}>Rejected</option>
+                <option value="withdrawn" {% if status_filter == "withdrawn" %}selected{% endif %}>Withdrawn</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+{% if groups %}
+{% for group in groups %}
+<div class="card mt-16">
+    {% if not selected_job %}
+    <div class="card-header">
+        <h2>
+            <a href="{{ url_for('recruiter.candidates', job_id=group.job_id, status=status_filter or None) }}">{{ group.job_title }}</a>
+            <span class="status-tag status-tag-{{ group.job_status }}">{{ group.job_status }}</span>
+        </h2>
+    </div>
+    {% endif %}
+    <table>
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Candidate</th>
+                <th>Score</th>
+                <th>Skills</th>
+                <th>Flags</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for app in group.rows %}
+            <tr{% if app.status == 'withdrawn' %} class="row-withdrawn"{% endif %}>
+                <td>
+                    {% if app.rank %}
+                        <span class="rank-badge"{% if app.rank_tied %} title="Tied on score"{% endif %}>#{{ app.rank }}</span>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {{ app.candidate_name }}
+                    <div class="text-muted candidate-email">{{ app.candidate_email }}</div>
+                </td>
+                <td title="{% if app.processing_status == 'done' and 'Not scored:' not in (app.processing_note or '') %}{{ app.breakdown_text }}{% endif %}">
+                    {{ score_pill(app) }}
+                </td>
+                <td>
+                    {% if app.processing_status == 'done' and 'Not scored:' not in (app.processing_note or '') %}
+                        {% if app.skills_required %}
+                            <span title="Required skills matched">{{ app.skills_matched }} of {{ app.skills_required }}</span>
+                        {% else %}
+                            <span class="text-muted" title="This job lists no required skills">—</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if app.duplicate_flag %}
+                        <span class="flag-tag flag-duplicate" title="{{ app.duplicate_similarity }}% similar to another resume">
+                            Duplicate {{ app.duplicate_similarity }}%
+                        </span>
+                    {% endif %}
+                    {% if app.consistency_flag %}
+                        <span class="flag-tag flag-consistency">Inconsistency</span>
+                    {% endif %}
+                    {% if not app.duplicate_flag and not app.consistency_flag %}
+                        {% if app.processing_status == 'done' %}
+                            <span class="text-muted">—</span>
+                        {% elif app.processing_status == 'failed' %}
+                            <span class="flag-tag flag-pending">Not available</span>
+                        {% else %}
+                            <span class="flag-tag flag-pending">Analysing…</span>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td><span class="status-tag status-tag-{{ app.status }}">{{ app.status }}</span></td>
+                <td>
+                    <a href="{{ url_for('recruiter.candidate_detail', application_id=app.id) }}">View →</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+{% else %}
+<div class="card mt-16">
+    <p class="text-muted">No candidates match the current filters.</p>
+</div>
+{% endif %}
+{% endblock %}

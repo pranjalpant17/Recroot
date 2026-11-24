@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}My Applications — Recroot{% endblock %}
+
+{% block extra_css %}
+{% from "_processing.html" import auto_refresh %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/candidate.css') }}">
+{{ auto_refresh(applications) }}
+{% endblock %}
+
+{% block content %}
+{% from "_processing.html" import score_pill %}
+<h1>My Applications</h1>
+<p class="text-muted mb-16">{{ applications|length }} application{{ "s" if applications|length != 1 else "" }} submitted.</p>
+
+{% if applications %}
+<div class="application-list">
+    {% for app in applications %}
+    <div class="card application-card">
+        <div class="application-card-header">
+            <div>
+                <h2>{{ app.job_title }}</h2>
+                <p class="text-muted">Applied {{ app.applied_at }}</p>
+            </div>
+            <div class="application-card-header-right">
+                {{ score_pill(app, large=True) }}
+                <span class="status-tag status-tag-{{ app.status }}">{{ app.status }}</span>
+            </div>
+        </div>
+
+        {% set scored = app.processing_status == 'done' and 'Not scored' not in (app.processing_note or '') %}
+        {% if app.processing_status in ('queued', 'processing') %}
+        <p class="processing-notice mt-16">
+            Your resume is being analysed. Your score and skill breakdown will appear here shortly.
+        </p>
+        {% elif app.processing_status == 'failed' %}
+        <p class="processing-notice processing-notice-failed mt-16">
+            We couldn't finish analysing this application. The recruiter can still review it.
+        </p>
+        {% elif not scored %}
+        <p class="processing-notice mt-16">
+            Your resume couldn't be scored automatically. The recruiter can still review your application.
+        </p>
+        {% endif %}
+
+        {% if scored %}
+        <table class="score-table mt-16">
+            <tbody>
+                <tr>
+                    <td>Required Skills</td>
+                    <td class="score-cell">{{ app.skill_score }} / {{ weights.skills }}</td>
+                    <td>Experience</td>
+                    <td class="score-cell">{{ app.experience_score }} / {{ weights.experience }}</td>
+                </tr>
+                <tr>
+                    <td>Education</td>
+                    <td class="score-cell">{{ app.education_score }} / {{ weights.education }}</td>
+                    <td>Projects</td>
+                    <td class="score-cell">{{ app.project_score }} / {{ weights.projects }}</td>
+                </tr>
+                <tr>
+                    <td>Certifications</td>
+                    <td class="score-cell">{{ app.certification_score }} / {{ weights.certifications }}</td>
+                    <td>Role Relevance</td>
+                    <td class="score-cell">{{ app.relevance_score }} / {{ weights.relevance }}</td>
+                </tr>
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if scored and (app.matched_skills_list or app.missing_skills_list) %}
+        <div class="skills-columns mt-16">
+            <div>
+                <h3 class="skills-subhead skills-matched">Matched</h3>
+                {% if app.matched_skills_list %}
+                <ul class="skill-list">
+                    {% for skill in app.matched_skills_list %}
+                    <li class="skill-chip skill-chip-matched">✓ {{ skill }}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">Not scored yet.</p>
+                {% endif %}
+            </div>
+            <div>
+                <h3 class="skills-subhead skills-missing">Missing</h3>
+                {% if app.missing_skills_list %}
+                <ul class="skill-list">
+                    {% for skill in app.missing_skills_list %}
+                    <li class="skill-chip skill-chip-missing">✗ {{ skill }}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">None recorded.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Step 39: stage timeline, from application_stage_history. Recruiter
+           notes are never loaded for this page. #}
+        <div class="stage-timeline mt-16">
+            <h3 class="skills-subhead">Application timeline</h3>
+            {% if app.history_incomplete %}
+            <p class="text-muted timeline-gap">Earlier stage history is not available for this application.</p>
+            {% endif %}
+            {% if app.timeline %}
+            <ol class="timeline-list">
+                {% for event in app.timeline %}
+                <li class="timeline-item">
+                    <span class="timeline-dot" aria-hidden="true"></span>
+                    <div class="timeline-body">
+                        <div class="timeline-event">
+                            <span class="status-tag status-tag-{{ event.to_status }}">{{ event.to_status }}</span>
+                            <span class="timeline-label">{{ event.label }}</span>
+                        </div>
+                        <div class="text-muted timeline-time">
+                            {% if event.changed_at %}{{ event.changed_at.strftime("%d %b %Y, %H:%M") }}{% endif %}
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ol>
+            {% endif %}
+        </div>
+
+        <p class="text-muted resume-used-note">
+            Submitted with:
+            {% if app.resume_version_number %}<strong>Resume v{{ app.resume_version_number }}</strong> ·{% endif %}
+            <a href="{{ url_for('candidate.download_application_resume', application_id=app.id) }}" target="_blank" rel="noopener">
+                {{ app.resume_path.split('/')[-1] }} ↗
+            </a>
+        </p>
+
+        {% if app.status in ("pending", "shortlisted", "interview", "offer") %}
+        <form method="POST"
+              action="{{ url_for('candidate.withdraw_application', application_id=app.id) }}"
+              onsubmit="return confirm('Are you sure you want to withdraw this application?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger">
+                Withdraw Application
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">
+    You haven't applied to any jobs yet. <a href="{{ url_for('candidate.jobs') }}">Browse open jobs →</a>
+</p>
+{% endif %}
+{% endblock %}

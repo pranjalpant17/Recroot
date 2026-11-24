@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Recruiter Dashboard — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/recruiter.css') }}">
+{# Re-check every few seconds while any active application is still being analysed. #}
+{% if stats.processing %}<meta http-equiv="refresh" content="8">{% endif %}
+{% endblock %}
+
+{% block content %}
+{% from "_processing.html" import score_pill %}
+<h1>Recruiter Dashboard</h1>
+<p class="text-muted mb-16">Overview of your jobs and incoming applications.</p>
+
+<div class="stat-grid">
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.open_jobs }}</div>
+        <div class="stat-label">Open Jobs</div>
+        <div class="stat-sub">{{ stats.closed_jobs }} closed</div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.total_applications }}</div>
+        <div class="stat-label">Total Applications</div>
+        <div class="stat-sub">
+            active
+            {% if stats.withdrawn %}· {{ stats.withdrawn }} withdrawn not counted{% endif %}
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.pending }}</div>
+        <div class="stat-label">Pending Review</div>
+        <div class="stat-sub">{{ stats.shortlisted }} shortlisted</div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{% if stats.scored %}{{ stats.avg_score }}{% else %}—{% endif %}</div>
+        <div class="stat-label">Avg. Match Score</div>
+        <div class="stat-sub">
+            out of 100, across {{ stats.scored }} scored application{{ "s" if stats.scored != 1 else "" }}
+            {% if stats.processing %}· {{ stats.processing }} still analysing{% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card mt-16">
+    <div class="card-header">
+        <h2>Hiring Pipeline</h2>
+        <a href="{{ url_for('recruiter.board') }}">Open Kanban board →</a>
+    </div>
+    <div class="pipeline-stages">
+        <div class="pipeline-stage">
+            <span class="status-tag status-tag-pending">Pending</span>
+            <span class="pipeline-count">{{ stats.pending }}</span>
+        </div>
+        <div class="pipeline-stage">
+            <span class="status-tag status-tag-shortlisted">Shortlisted</span>
+            <span class="pipeline-count">{{ stats.shortlisted }}</span>
+        </div>
+        <div class="pipeline-stage">
+            <span class="status-tag status-tag-interview">Interview</span>
+            <span class="pipeline-count">{{ stats.interview }}</span>
+        </div>
+        <div class="pipeline-stage">
+            <span class="status-tag status-tag-offer">Offer</span>
+            <span class="pipeline-count">{{ stats.offer }}</span>
+        </div>
+        <div class="pipeline-stage">
+            <span class="status-tag status-tag-hired">Hired</span>
+            <span class="pipeline-count">{{ stats.hired }}</span>
+        </div>
+    </div>
+    <p class="text-muted summary-note">
+        Active applications on your jobs only; rejected and withdrawn applications are not counted here.
+    </p>
+</div>
+
+<div class="card mt-16">
+    <div class="card-header">
+        <h2>Jobs Overview</h2>
+        <a href="{{ url_for('recruiter.jobs') }}">Manage jobs →</a>
+    </div>
+
+    {% if job_summaries %}
+    <table>
+        <thead>
+            <tr>
+                <th>Job</th>
+                <th>Status</th>
+                <th>Applicants</th>
+                <th>Scored</th>
+                <th>Avg. score</th>
+                <th>Top score</th>
+                <th>Shortlisted</th>
+                <th>Flagged</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for job in job_summaries %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('recruiter.candidates', job_id=job.id) }}">{{ job.title }}</a>
+                </td>
+                <td><span class="status-tag status-tag-{{ job.status }}">{{ job.status }}</span></td>
+                <td>
+                    {{ job.applicants }}
+                    {% if job.processing %}<span class="text-muted">({{ job.processing }} analysing)</span>{% endif %}
+                </td>
+                <td>{{ job.scored }}</td>
+                <td>{% if job.scored %}{{ job.avg_score }}{% else %}—{% endif %}</td>
+                <td>{% if job.scored %}{{ job.top_score }}{% else %}—{% endif %}</td>
+                <td>{{ job.shortlisted }}</td>
+                <td>
+                    {% if job.flagged %}
+                        <span class="flag-tag flag-duplicate" title="Applications with a duplicate or consistency flag">{{ job.flagged }}</span>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="text-muted summary-note">
+        Counts cover active applications only; withdrawn applications are not included.
+    </p>
+    {% else %}
+    <p class="text-muted">You haven't created any jobs yet.</p>
+    {% endif %}
+</div>
+
+<div class="card mt-16">
+    <div class="card-header">
+        <h2>Top Candidates</h2>
+        <a href="{{ url_for('recruiter.candidates') }}">View all candidates →</a>
+    </div>
+
+    {% set ns = namespace(any=false) %}
+    {% for job in job_summaries if job.top_candidates %}
+    {% set ns.any = true %}
+    <div class="top-job">
+        <h3 class="top-job-title">
+            <a href="{{ url_for('recruiter.candidates', job_id=job.id) }}">{{ job.title }}</a>
+            <span class="status-tag status-tag-{{ job.status }}">{{ job.status }}</span>
+        </h3>
+        <table class="top-table">
+            <tbody>
+                {% for app in job.top_candidates %}
+                <tr>
+                    <td class="top-rank">
+                        <span class="rank-badge"{% if app.rank_tied %} title="Tied on score"{% endif %}>#{{ app.rank }}</span>
+                    </td>
+                    <td>{{ app.candidate_name }}</td>
+                    <td>{{ score_pill(app) }}</td>
+                    <td><span class="status-tag status-tag-{{ app.status }}">{{ app.status }}</span></td>
+                    <td>
+                        <a href="{{ url_for('recruiter.candidate_detail', application_id=app.id) }}">View →</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+    {% if not ns.any %}
+    <p class="text-muted">No scored candidates yet. They appear here once their resumes have been analysed.</p>
+    {% else %}
+    <p class="text-muted summary-note">
+        Top 3 per job (everyone tied for third place is included). Rejected and withdrawn applications are not shown.
+    </p>
+    {% endif %}
+</div>
+
+<div class="card mt-16">
+    <div class="card-header">
+        <h2>Recent Applications</h2>
+        <a href="{{ url_for('recruiter.candidates') }}">View all candidates →</a>
+    </div>
+
+    {% if recent_applications %}
+    <table>
+        <thead>
+            <tr>
+                <th>Candidate</th>
+                <th>Job</th>
+                <th>Score</th>
+                <th>Status</th>
+                <th>Applied</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for app in recent_applications %}
+            <tr>
+                <td>{{ app.candidate_name }}</td>
+                <td>{{ app.job_title }}</td>
+                <td>{{ score_pill(app) }}</td>
+                <td><span class="status-tag status-tag-{{ app.status }}">{{ app.status }}</span></td>
+                <td class="text-muted">{{ app.applied_at }}</td>
+                <td>
+                    <a href="{{ url_for('recruiter.candidate_detail', application_id=app.id) }}">View →</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No applications received yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

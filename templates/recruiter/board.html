@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}{% if selected_job %}Board — {{ selected_job.title }}{% else %}Kanban Board{% endif %} — Recroot{% endblock %}
+
+{% block extra_css %}
+{% from "_processing.html" import auto_refresh %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/recruiter.css') }}">
+{{ auto_refresh(applications) }}
+{% endblock %}
+
+{% block content %}
+
+{# One application card. Used by the five stage columns and the Rejected list.
+   Every action is a plain POST form (no JavaScript) to the existing
+   recruiter.update_application_status route; `return_to=board` only tells the
+   server to come back here (it builds the URL itself). #}
+{% macro board_card(card) %}
+{% from "_processing.html" import score_pill %}
+<div class="board-card">
+    <div class="board-card-top">
+        <a class="board-card-name" href="{{ url_for('recruiter.candidate_detail', application_id=card.id) }}">{{ card.candidate_name }}</a>
+        {% if card.rank %}
+        <span class="rank-badge"{% if card.rank_tied %} title="Tied on score"{% endif %}>#{{ card.rank }}</span>
+        {% endif %}
+    </div>
+
+    <div class="board-card-meta">
+        {{ score_pill(card) }}
+        {% if card.duplicate_flag %}
+        <span class="flag-tag flag-duplicate" title="{{ card.duplicate_similarity }}% similar to another resume">Duplicate {{ card.duplicate_similarity }}%</span>
+        {% endif %}
+        {% if card.consistency_flag %}
+        <span class="flag-tag flag-consistency">Inconsistency</span>
+        {% endif %}
+    </div>
+
+    {% if card.actions %}
+    <div class="board-actions">
+        {% for action in card.actions %}
+        <form method="POST" action="{{ url_for('recruiter.update_application_status', application_id=card.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="return_to" value="board">
+            <button type="submit" name="status" value="{{ action.status }}" class="btn btn-sm {{ action.css }}">{{ action.label }}</button>
+        </form>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted board-final">Final stage — no further moves.</p>
+    {% endif %}
+</div>
+{% endmacro %}
+
+<div class="board-header">
+    <div>
+        <h1>Kanban Board{% if selected_job %} — {{ selected_job.title }}{% endif %}</h1>
+        <p class="text-muted board-intro">
+            {% if selected_job %}
+            Active applications by hiring stage, best score first. Withdrawn applications are not shown.
+            {% else %}
+            Choose one of your jobs to see its applications as a board.
+            {% endif %}
+        </p>
+    </div>
+
+    {% if own_jobs %}
+    <form method="GET" action="{{ url_for('recruiter.board') }}" class="board-job-form">
+        <div>
+            <label for="board_job_id">Job</label>
+            <select id="board_job_id" name="job_id">
+                {% if not selected_job %}<option value="" selected>Select a job…</option>{% endif %}
+                {% for job in own_jobs %}
+                <option value="{{ job.id }}" {% if selected_job and selected_job.id == job.id %}selected{% endif %}>
+                    {{ job.title }} ({{ job.status }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Show board</button>
+    </form>
+    {% endif %}
+</div>
+
+{% if selected_job %}
+<p class="board-links">
+    <a href="{{ url_for('recruiter.candidates', job_id=selected_job.id) }}">← Ranked candidate list for this job</a>
+</p>
+
+<div class="board-grid">
+    {% for column in columns %}
+    <section class="board-column board-column-{{ column.key }}" aria-label="{{ column.label }}">
+        <div class="board-column-header">
+            <span class="status-tag status-tag-{{ column.key }}">{{ column.label }}</span>
+            <span class="board-count">{{ column.rows | length }}</span>
+        </div>
+        <div class="board-cards">
+            {% for card in column.rows %}
+            {{ board_card(card) }}
+            {% else %}
+            <p class="board-empty">No candidates</p>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+</div>
+
+<details class="board-rejected card">
+    <summary>
+        <span class="status-tag status-tag-rejected">Rejected</span>
+        <span class="board-count">{{ rejected | length }}</span>
+    </summary>
+    {% if rejected %}
+    <div class="board-rejected-list">
+        {% for card in rejected %}
+        {{ board_card(card) }}
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="board-empty">No rejected candidates.</p>
+    {% endif %}
+</details>
+
+<p class="text-muted summary-note">
+    Ranks are computed over all active scored applications for the job, rejected ones included;
+    moving a candidate between stages never changes a score or a rank.
+</p>
+
+{% elif own_jobs %}
+<div class="card">
+    <ul class="board-job-list">
+        {% for job in own_jobs %}
+        <li>
+            <a href="{{ url_for('recruiter.board', job_id=job.id) }}">{{ job.title }}</a>
+            <span class="status-tag status-tag-{{ job.status }}">{{ job.status }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% else %}
+<div class="card">
+    <p class="text-muted">
+        You haven't created any jobs yet. <a href="{{ url_for('recruiter.jobs') }}">Create a job →</a>
+    </p>
+</div>
+{% endif %}
+{% endblock %}

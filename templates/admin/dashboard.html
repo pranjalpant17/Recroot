@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+<p class="text-muted mb-16">System-wide overview of users, jobs and activity.</p>
+
+<div class="stat-grid">
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.total_users }}</div>
+        <div class="stat-label">Total Users</div>
+        <div class="stat-sub">
+            {{ stats.admins }} admin · {{ stats.recruiters }} recruiter ·
+            {{ stats.candidates }} candidate
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.open_jobs }}</div>
+        <div class="stat-label">Open Jobs</div>
+        <div class="stat-sub">{{ stats.closed_jobs }} closed</div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.total_applications }}</div>
+        <div class="stat-label">Total Applications</div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.avg_match_score }}</div>
+        <div class="stat-label">Avg. Match Score</div>
+        <div class="stat-sub">out of 100</div>
+    </div>
+</div>
+
+<div class="card mt-16">
+    <div class="card-header">
+        <h2>Recent System Activity</h2>
+        <a href="{{ url_for('admin.audit') }}">View full audit log →</a>
+    </div>
+
+    {% if recent_activity %}
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in recent_activity %}
+            <tr>
+                <td class="text-muted">{{ entry.timestamp }}</td>
+                <td>
+                    {% if entry.user_name %}
+                        {{ entry.user_name }}
+                        <span class="role-tag role-tag-{{ entry.user_role }}">{{ entry.user_role }}</span>
+                    {% elif entry.action.startswith('system_') %}
+                        System
+                    {% else %}
+                        <span class="text-muted">Unknown user</span>
+                    {% endif %}
+                </td>
+                <td>{{ entry.action }}</td>
+                <td class="text-muted">{{ entry.details }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No activity recorded yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}My Jobs — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/recruiter.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>My Jobs</h1>
+<p class="text-muted mb-16">Create job postings and manage their status.</p>
+
+<div class="recruiter-layout">
+    <div class="card">
+        <div class="card-header">
+            <h2>Your Postings ({{ jobs|length }})</h2>
+        </div>
+
+        {% if jobs %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Applications</th>
+                    <th>Deadline</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>{{ job.title }}</td>
+                    <td><span class="status-tag status-tag-{{ job.status }}">{{ job.status }}</span></td>
+                    <td>
+                        <a href="{{ url_for('recruiter.candidates', job_id=job.id) }}">
+                            {{ job.application_count }} view →
+                        </a>
+                    </td>
+                    <td class="text-muted">{{ job.deadline or "No deadline" }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('recruiter.toggle_job_status', job_id=job.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-link">
+                                {{ "Close" if job.status == "open" else "Reopen" }}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">You haven't posted any jobs yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Post a New Job</h2>
+        </div>
+        <form method="POST" action="{{ url_for('recruiter.jobs') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-16">
+                <label for="title">Job title</label>
+                <input type="text" id="title" name="title" placeholder="e.g. Backend Developer" required>
+            </div>
+
+            <div class="mb-16">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="4"
+                    placeholder="Responsibilities, team, what the role involves..."></textarea>
+            </div>
+
+            <div class="mb-16">
+                <label for="required_skills">Required skills (comma-separated)</label>
+                <input type="text" id="required_skills" name="required_skills"
+                    placeholder="Python, Flask, MySQL, REST API, Git" required>
+            </div>
+
+            <div class="mb-16">
+                <label for="preferred_skills">Preferred skills (comma-separated)</label>
+                <input type="text" id="preferred_skills" name="preferred_skills"
+                    placeholder="Docker, AWS">
+            </div>
+
+            <div class="form-row">
+                <div class="mb-16">
+                    <label for="experience_required">Experience required (years)</label>
+                    <input type="number" id="experience_required" name="experience_required"
+                        min="0" value="0">
+                </div>
+
+                <div class="mb-16">
+                    <label for="education_required">Education required</label>
+                    <input type="text" id="education_required" name="education_required"
+                        placeholder="e.g. B.Tech CSE">
+                </div>
+            </div>
+
+            <div class="mb-16">
+                <label for="deadline">Application deadline</label>
+                <input type="date" id="deadline" name="deadline">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Post Job</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

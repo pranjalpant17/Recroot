@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Scheduling — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Scheduling</h1>
+        <p class="text-muted">
+            Which waiting application a free worker takes next. This is the live
+            queue of the worker pool, in the order it will actually be taken.
+        </p>
+    </div>
+</div>
+
+{% if not view.available %}
+<div class="card mb-16">
+    <p>The background worker is not running in this server process, so there is
+       no queue to show. (It is not started in testing mode or by
+       <code>init-db</code>/<code>seed-db</code>.)</p>
+</div>
+{% else %}
+
+<div class="card mb-16">
+    <div class="card-header"><h2>Algorithm</h2></div>
+    <p class="mb-16">Active: <strong>{{ view.algorithm_label }}</strong></p>
+    {% if view.dispatch_window_seconds %}
+    <p class="mb-16">
+        Demo dispatch window: <strong>{{ view.dispatch_window_seconds|round(1) }} s</strong>
+        &mdash; waiting applications accumulate for this long before a worker picks the next one
+        {% if view.dispatch_window_remaining %}
+        (window open, {{ view.dispatch_window_remaining|round(1) }} s left)
+        {% endif %}.
+    </p>
+    {% endif %}
+    <form method="post" action="{{ url_for('admin.scheduler_set_algorithm') }}" class="form-row">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <select name="algorithm" aria-label="Scheduling algorithm">
+            {% for value, label in view.algorithms %}
+            <option value="{{ value }}" {{ 'selected' if value == view.algorithm else '' }}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Apply</button>
+    </form>
+    <p class="field-hint">
+        FCFS: oldest <code>applied_at</code> first, then lowest id.
+        Priority: upcoming deadlines first (earliest first; a deadline of today
+        is still upcoming), then no deadline, then expired deadlines; ties by
+        <code>applied_at</code>, then id. The change applies to every later
+        selection; the setting resets to the configured default when the
+        server restarts.
+    </p>
+</div>
+
+<div class="card mb-16">
+    <div class="card-header">
+        <h2>Waiting queue ({{ view.waiting|length }} / {{ view.capacity }})</h2>
+        <a href="{{ url_for('admin.scheduler') }}">Refresh</a>
+    </div>
+    {% if view.waiting %}
+    <table>
+        <thead>
+            <tr>
+                <th>Position</th><th>Application</th><th>Job</th>
+                <th>Deadline</th><th>Category</th><th>Applied at</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in view.waiting %}
+            <tr>
+                <td>{{ row.position }}</td>
+                <td>#{{ row.application_id }}</td>
+                <td>{{ row.job_title or '—' }}</td>
+                <td>{{ row.deadline.strftime('%Y-%m-%d') if row.deadline else '—' }}</td>
+                <td>{{ row.bucket_label }}</td>
+                <td>{{ row.applied_at.strftime('%Y-%m-%d %H:%M:%S') }}{{ ' (approx.)' if row.metadata_missing else '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="field-hint">
+        Category is evaluated against today ({{ view.today.strftime('%Y-%m-%d') }}).
+        The queue is usually empty because workers take tasks almost at once;
+        the order only shows when many applications arrive together.
+    </p>
+    {% else %}
+    <p class="text-muted">Nothing is waiting. Workers take new applications immediately when idle.</p>
+    {% endif %}
+</div>
+
+<div class="card mb-16">
+    <div class="card-header"><h2>Recently dispatched ({{ view.dispatched_total }} since start)</h2></div>
+    {% if view.dispatched %}
+    <table>
+        <thead>
+            <tr>
+                <th>Dispatch #</th><th>Application</th><th>Job</th><th>Deadline</th>
+                <th>Category</th><th>Algorithm</th><th>Worker</th><th>State</th><th>Completion #</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in view.dispatched %}
+            <tr>
+                <td>{{ row.dispatch_seq }}</td>
+                <td>#{{ row.application_id }}</td>
+                <td>{{ row.job_title or '—' }}</td>
+                <td>{{ row.deadline.strftime('%Y-%m-%d') if row.deadline else '—' }}</td>
+                <td>{{ row.bucket_label }}</td>
+                <td>{{ row.algorithm }}</td>
+                <td>{{ row.worker }}</td>
+                <td>{{ row.state }}</td>
+                <td>{{ row.completion_seq if row.completion_seq else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="field-hint">
+        Dispatch # is the order tasks were handed to workers. Completion # is the
+        order they finished; with several workers the two can differ.
+    </p>
+    {% else %}
+    <p class="text-muted">No application has been dispatched since the server started.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

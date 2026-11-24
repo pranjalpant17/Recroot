@@ -1,0 +1,39 @@
+{# ------------------------------------------------------------------
+   Step 33 - shared rendering of background-processing state.
+
+   Used by both the candidate and recruiter templates so that the two
+   roles always describe an application the same way:
+
+     queued      -> "Analysing..."   (nothing has started yet)
+     processing  -> "Processing..."  (a worker is on it right now)
+     done        -> the real score (or "Not scored" if the resume could
+                    not be read)
+     failed      -> "Failed"
+
+   A score of 0 is never shown for an application that has not finished
+   processing: 0 is only the column's placeholder value until then.
+   ------------------------------------------------------------------ #}
+
+{% macro score_pill(app, large=False) -%}
+{%- set size = ' score-pill-lg' if large else '' -%}
+{%- if app.processing_status == 'done' -%}
+    {%- if 'Not scored' in (app.processing_note or '') -%}
+<span class="score-pill score-pill-processing{{ size }}" title="{{ app.processing_note }}">Not scored</span>
+    {%- else -%}
+<span class="score-pill{{ size }}">{{ app.match_score }}/100</span>
+    {%- endif -%}
+{%- elif app.processing_status == 'failed' -%}
+<span class="score-pill score-pill-failed{{ size }}" title="Processing failed">Failed</span>
+{%- elif app.processing_status == 'processing' -%}
+<span class="score-pill score-pill-processing{{ size }}">Processing…</span>
+{%- else -%}
+<span class="score-pill score-pill-processing{{ size }}">Analysing…</span>
+{%- endif -%}
+{%- endmacro %}
+
+{# Re-check the page every few seconds while anything is still being analysed. #}
+{% macro auto_refresh(rows) -%}
+{%- if rows | selectattr('processing_status', 'in', ['queued', 'processing']) | list -%}
+<meta http-equiv="refresh" content="8">
+{%- endif -%}
+{%- endmacro %}

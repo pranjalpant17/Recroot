@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Resume Versions — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/candidate.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>Resume Versions</h1>
+<p class="text-muted mb-16">
+    Upload a new PDF whenever you update your resume — Recroot keeps every
+    version, and recruiters can see exactly which one was used for each
+    application.
+</p>
+
+<div class="candidate-layout">
+    <div class="card">
+        <div class="card-header">
+            <h2>Your Versions ({{ versions|length }})</h2>
+        </div>
+
+        {% if versions %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Uploaded</th>
+                    <th>File</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in versions %}
+                <tr>
+                    <td>v{{ v.version_number }}</td>
+                    <td class="text-muted">{{ v.created_at }}</td>
+                    <td>
+                        <a href="{{ url_for('candidate.download_resume_version', version_id=v.id) }}" target="_blank" rel="noopener">
+                            View PDF ↗
+                        </a>
+                    </td>
+                    <td>
+                        <form
+                            method="POST"
+                            action="{{ url_for('candidate.delete_resume_version', version_id=v.id) }}"
+                            onsubmit="return confirm('Delete version {{ v.version_number }}? This cannot be undone.');"
+                        >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-link-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">You haven't uploaded a resume yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Upload New Version</h2>
+        </div>
+        <form method="POST" action="{{ url_for('candidate.resume_versions') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-16">
+                <label for="resume">PDF file</label>
+                <input type="file" id="resume" name="resume" accept=".pdf,application/pdf" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Upload</button>
+        </form>
+        <p class="text-muted upload-hint">PDF only, up to 10 MB.</p>
+    </div>
+</div>
+{% endblock %}

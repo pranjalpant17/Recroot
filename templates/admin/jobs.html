@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}All Jobs — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>All Job Postings</h1>
+<p class="text-muted mb-16">
+    View every job in the system, open or close any posting, or create a job
+    and assign it to a recruiter. Closing a job keeps all of its applications,
+    scores and resumes.
+</p>
+
+<details class="create-job mb-16" id="create-job"{% if open_form %} open{% endif %}>
+    <summary class="btn btn-primary">+ Create Job</summary>
+
+    <div class="card create-job-form">
+        <div class="card-header">
+            <h2>Create a Job</h2>
+        </div>
+
+        {% if recruiters %}
+        <form method="POST" action="{{ url_for('admin.create_job') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-16">
+                <label for="title">Job title</label>
+                <input type="text" id="title" name="title" placeholder="e.g. Backend Developer" required>
+            </div>
+
+            <div class="mb-16">
+                <label for="assigned_recruiter_id">Assign to recruiter</label>
+                <select id="assigned_recruiter_id" name="assigned_recruiter_id" required>
+                    <option value="" disabled selected>Select a recruiter</option>
+                    {% for r in recruiters %}
+                    <option value="{{ r.id }}">{{ r.name }} ({{ r.email }})</option>
+                    {% endfor %}
+                </select>
+                <div class="field-hint">
+                    The recruiter will see this job and its applicants in their own dashboard.
+                </div>
+            </div>
+
+            <div class="mb-16">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="4"
+                    placeholder="Responsibilities, team, what the role involves..."></textarea>
+            </div>
+
+            <div class="mb-16">
+                <label for="required_skills">Required skills (comma-separated)</label>
+                <input type="text" id="required_skills" name="required_skills"
+                    placeholder="Python, Flask, MySQL, REST API, Git" required>
+            </div>
+
+            <div class="mb-16">
+                <label for="preferred_skills">Preferred skills (comma-separated)</label>
+                <input type="text" id="preferred_skills" name="preferred_skills"
+                    placeholder="Docker, AWS">
+            </div>
+
+            <div class="form-row">
+                <div class="mb-16">
+                    <label for="experience_required">Experience required (years)</label>
+                    <input type="number" id="experience_required" name="experience_required"
+                        min="0" value="0">
+                </div>
+
+                <div class="mb-16">
+                    <label for="education_required">Education required</label>
+                    <input type="text" id="education_required" name="education_required"
+                        placeholder="e.g. B.Tech CSE">
+                </div>
+            </div>
+
+            <div class="mb-16">
+                <label for="deadline">Application deadline</label>
+                <input type="date" id="deadline" name="deadline">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create Job</button>
+        </form>
+        {% else %}
+        <p class="text-muted">
+            There are no recruiter accounts yet. Create a recruiter on the
+            <a href="{{ url_for('admin.users') }}">Users page</a> first, then
+            assign jobs to them here.
+        </p>
+        {% endif %}
+    </div>
+</details>
+
+<div class="card">
+    {% if jobs %}
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Posted By</th>
+                <th>Status</th>
+                <th>Applications</th>
+                <th>Deadline</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for job in jobs %}
+            <tr>
+                <td>{{ job.title }}</td>
+                <td>{{ job.created_by_name or "—" }}</td>
+                <td>
+                    <span class="status-tag status-tag-{{ job.status }}">{{ job.status }}</span>
+                </td>
+                <td>{{ job.application_count }}</td>
+                <td class="text-muted">{{ job.deadline or "No deadline" }}</td>
+                <td class="text-muted">{{ job.created_at }}</td>
+                <td>
+                    {% if job.status == 'open' %}
+                    <form
+                        method="POST"
+                        action="{{ url_for('admin.set_status', job_id=job.id) }}"
+                        onsubmit='return confirm({{ ("Close job " ~ job.title ~ "? Existing applications, scores and resumes are kept. You can reopen it at any time.")|tojson }});'
+                    >
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="status" value="closed">
+                        <button type="submit" class="btn-link-danger">Close Job</button>
+                    </form>
+                    {% else %}
+                    <form method="POST" action="{{ url_for('admin.set_status', job_id=job.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="status" value="open">
+                        <button type="submit" class="btn-link">Open Job</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No jobs have been posted yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

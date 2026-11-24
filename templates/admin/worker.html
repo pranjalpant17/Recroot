@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Worker Monitor — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Worker Monitor</h1>
+        <p class="text-muted">Live state of the background resume-processing pool.</p>
+    </div>
+    <label class="refresh-toggle" for="auto-refresh">
+        <input type="checkbox" id="auto-refresh" checked>
+        Auto-refresh every {{ refresh_seconds }}s
+    </label>
+</div>
+
+{# ---------- Overall state ---------- #}
+<div class="card mb-16">
+    <div class="monitor-state">
+        <span class="status-tag status-tag-{{ worker.status }}">{{ worker.status_label }}</span>
+        <span>{{ worker.status_message }}</span>
+    </div>
+
+    {% if worker.warnings %}
+    <ul class="monitor-warnings">
+        {% for warning in worker.warnings %}
+        <li>{{ warning }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+
+{# ---------- Headline numbers ---------- #}
+<div class="stat-grid">
+    <div class="card stat-card">
+        <div class="stat-value">{{ worker.queue_depth }}<span class="stat-of"> / {{ worker.queue_capacity }}</span></div>
+        <div class="stat-label">Queue depth</div>
+        <div class="meter" role="img" aria-label="Queue {{ worker.queue_pct }}% full">
+            <div class="meter-fill meter-{{ worker.queue_state }}" style="width: {{ worker.queue_pct }}%"></div>
+        </div>
+        <div class="stat-sub">
+            {% if worker.queue_state == 'empty' %}Queue is empty
+            {% elif worker.queue_state == 'full' %}Queue is full
+            {% else %}{{ worker.queue_pct }}% of capacity{% endif %}
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ worker.active_workers }}<span class="stat-of"> / {{ worker.pool_size }}</span></div>
+        <div class="stat-label">Active workers</div>
+        <div class="meter" role="img" aria-label="{{ worker.worker_pct }}% of workers busy">
+            <div class="meter-fill" style="width: {{ worker.worker_pct }}%"></div>
+        </div>
+        <div class="stat-sub">
+            {{ worker.threads_alive }} thread{{ '' if worker.threads_alive == 1 else 's' }} alive ·
+            {{ worker.idle_workers }} idle
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ worker.in_flight }}</div>
+        <div class="stat-label">Tasks in flight</div>
+        <div class="stat-sub">Queued or being processed right now</div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ worker.uptime }}</div>
+        <div class="stat-label">Pool uptime</div>
+        <div class="stat-sub">Counters reset when the server restarts</div>
+    </div>
+</div>
+
+{% if not worker.has_activity %}
+<p class="text-muted mt-16">
+    No tasks have been queued or processed since this server started, so the
+    counters below are all zero. Submit an application as a candidate to see
+    them move.
+</p>
+{% endif %}
+
+<div class="grid-2 mt-16">
+    {# ---------- Counters ---------- #}
+    <div class="card">
+        <div class="card-header"><h2>Task counters</h2></div>
+        <div class="table-scroll">
+            <table>
+                <tbody>
+                    <tr><td>Enqueued</td><td class="num">{{ worker.enqueued }}</td>
+                        <td class="text-muted">Accepted into the queue</td></tr>
+                    <tr><td>Completed</td><td class="num">{{ worker.completed }}</td>
+                        <td class="text-muted">Finished successfully</td></tr>
+                    <tr><td>Failed</td><td class="num">{{ worker.failed }}</td>
+                        <td class="text-muted">Finished with an error</td></tr>
+                    <tr><td>Skipped</td><td class="num">{{ worker.skipped }}</td>
+                        <td class="text-muted">Application no longer existed</td></tr>
+                    <tr><td>Retry attempts</td><td class="num">{{ worker.retries }}</td>
+                        <td class="text-muted">Transient database errors retried</td></tr>
+                    <tr><td>Rejected: queue full</td><td class="num">{{ worker.rejected_full }}</td>
+                        <td class="text-muted">Left 'queued' for the recovery sweep</td></tr>
+                    <tr><td>Rejected: already in flight</td><td class="num">{{ worker.rejected_in_flight }}</td>
+                        <td class="text-muted">Duplicate enqueue ignored</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div>
+        {# ---------- Timing ---------- #}
+        <div class="card mb-16">
+            <div class="card-header"><h2>Processing time</h2></div>
+            {% if worker.has_timings %}
+            <div class="table-scroll">
+                <table>
+                    <tbody>
+                        <tr><td>Average per task</td><td class="num">{{ worker.avg_processing }}</td></tr>
+                        <tr><td>Slowest task</td><td class="num">{{ worker.max_processing }}</td></tr>
+                        <tr><td>Total processing time</td><td class="num">{{ worker.total_processing }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No task has finished yet, so there are no timings.</p>
+            {% endif %}
+            <p class="field-hint">
+                Average waiting time is not shown: the worker records waiting time
+                only per task, not as an aggregate.
+            </p>
+        </div>
+
+        {# ---------- Scheduling ---------- #}
+        <div class="card">
+            <div class="card-header"><h2>Scheduling policy</h2></div>
+            <p><strong>{{ worker.policy }}</strong></p>
+            <p class="text-muted">{{ worker.policy_detail }}</p>
+        </div>
+    </div>
+</div>
+
+{# ---------- Database view ---------- #}
+<div class="card mt-16">
+    <div class="card-header">
+        <h2>Applications by processing status (database)</h2>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>Queued</th>
+                    <th>Processing</th>
+                    <th>Done</th>
+                    <th>Failed</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ processing_counts.queued }}</td>
+                    <td>{{ processing_counts.processing }}</td>
+                    <td>{{ processing_counts.done }}</td>
+                    <td>{{ processing_counts.failed }}</td>
+                    <td>{{ processing_counts.total }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="field-hint">
+        These counts come from the database and persist across restarts. The
+        counters above are in-memory and belong to this server process only.
+    </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var box = document.getElementById('auto-refresh');
+    var delay = {{ refresh_ms|int }};
+    var timer = null;
+
+    try {
+        if (window.sessionStorage.getItem('recrootWorkerRefresh') === 'off') {
+            box.checked = false;
+        }
+    } catch (e) { /* storage unavailable: keep the default (on) */ }
+
+    function schedule() {
+        if (timer) { clearTimeout(timer); timer = null; }
+        if (box.checked) {
+            timer = setTimeout(function () { window.location.reload(); }, delay);
+        }
+    }
+
+    box.addEventListener('change', function () {
+        try {
+            window.sessionStorage.setItem('recrootWorkerRefresh', box.checked ? 'on' : 'off');
+        } catch (e) { /* ignore */ }
+        schedule();
+    });
+
+    schedule();
+})();
+</script>
+{% endblock %}

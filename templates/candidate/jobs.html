@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Jobs — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/candidate.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>Open Jobs</h1>
+<p class="text-muted mb-16">{{ jobs|length }} job{{ "s" if jobs|length != 1 else "" }} currently accepting applications.</p>
+
+{% if not has_resume %}
+<div class="notice-banner">
+    You'll need to <a href="{{ url_for('candidate.resume_versions') }}">upload a resume</a> before you can apply to a job.
+</div>
+{% endif %}
+
+{% if jobs %}
+<div class="job-list">
+    {% for job in jobs %}
+    <div class="card job-card">
+        <div class="job-card-header">
+            <h2>{{ job.title }}</h2>
+            {% if job.application_id %}
+                <span class="status-tag status-tag-{{ job.application_status }}">
+                    Applied — {{ job.application_status }}
+                </span>
+            {% endif %}
+        </div>
+
+        {% if job.description %}
+        <p class="job-description">{{ job.description }}</p>
+        {% endif %}
+
+        <div class="job-meta">
+            {% if job.experience_required %}
+            <span class="job-meta-item">{{ job.experience_required }}+ yrs experience</span>
+            {% endif %}
+            {% if job.education_required %}
+            <span class="job-meta-item">{{ job.education_required }}</span>
+            {% endif %}
+            {% if job.deadline %}
+            <span class="job-meta-item">Apply by {{ job.deadline }}</span>
+            {% endif %}
+        </div>
+
+        {% if job.required_skills_list %}
+        <div class="job-skills">
+            <span class="job-skills-label">Required:</span>
+            {% for skill in job.required_skills_list %}
+            <span class="skill-chip skill-chip-required">{{ skill }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if job.preferred_skills_list %}
+        <div class="job-skills">
+            <span class="job-skills-label">Preferred:</span>
+            {% for skill in job.preferred_skills_list %}
+            <span class="skill-chip skill-chip-preferred">{{ skill }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if not job.application_id %}
+        <form method="POST" action="{{ url_for('candidate.apply_to_job', job_id=job.id) }}" class="apply-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="resume_version_id" required {{ "disabled" if not has_resume }}>
+                {% if has_resume %}
+                    <option value="" disabled selected>Choose a resume version</option>
+                    {% for r in resume_choices %}
+                    <option value="{{ r.id }}">Version {{ r.version_number }}</option>
+                    {% endfor %}
+                {% else %}
+                    <option value="">No resumes uploaded</option>
+                {% endif %}
+            </select>
+            <button type="submit" class="btn btn-primary" {{ "disabled" if not has_resume }}>Apply</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">No open jobs right now — check back soon.</p>
+{% endif %}
+{% endblock %}

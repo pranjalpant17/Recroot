@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}My Dashboard — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/candidate.css') }}">
+{% endblock %}
+
+{% block content %}
+{% from "_processing.html" import score_pill %}
+<h1>Welcome, {{ user.name }}</h1>
+<p class="text-muted mb-16">Here's where things stand with your applications.</p>
+
+<div class="stat-grid">
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.resume_count }}</div>
+        <div class="stat-label">Resume Versions</div>
+        <div class="stat-sub">
+            <a href="{{ url_for('candidate.resume_versions') }}">
+                {% if stats.resume_count == 0 %}
+                    Upload Resume →
+                {% else %}
+                    Manage Resumes →
+                {% endif %}
+            </a>
+        </div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.open_jobs }}</div>
+        <div class="stat-label">Open Jobs</div>
+        <div class="stat-sub"><a href="{{ url_for('candidate.jobs') }}">Browse jobs →</a></div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.total_applications }}</div>
+        <div class="stat-label">Applications Sent</div>
+        <div class="stat-sub">{{ stats.pending }} pending</div>
+    </div>
+
+    <div class="card stat-card">
+        <div class="stat-value">{{ stats.shortlisted }}</div>
+        <div class="stat-label">Shortlisted</div>
+        <div class="stat-sub">{{ stats.rejected }} rejected</div>
+    </div>
+</div>
+
+<div class="card mt-16">
+    <div class="card-header">
+        <h2>Your Applications by Stage</h2>
+        <a href="{{ url_for('candidate.applications') }}">View timeline →</a>
+    </div>
+    <div class="pipeline-stages">
+        <div class="pipeline-stage">
+            <span class="status-tag status-tag-pending">Pending</span>
+            <span class="pipeline-count">{{ stats.pending }}</span>
+        </div>
+        <div class="pipeline-stage">
+            <span class="status-tag status-tag-shortlisted">Shortlisted</span>
+            <span class="pipeline-count">{{ stats.shortlisted }}</span>
+        </div>
+        <div class="pipeline-stage">
+            <span class="status-tag status-tag-interview">Interview</span>
+            <span class="pipeline-count">{{ stats.interview }}</span>
+        </div>
+        <div class="pipeline-stage">
+            <span class="status-tag status-tag-offer">Offer</span>
+            <span class="pipeline-count">{{ stats.offer }}</span>
+        </div>
+        <div class="pipeline-stage">
+            <span class="status-tag status-tag-hired">Hired</span>
+            <span class="pipeline-count">{{ stats.hired }}</span>
+        </div>
+    </div>
+    {% if stats.rejected or stats.withdrawn %}
+    <p class="text-muted summary-note">
+        Not counted above:
+        {{ stats.rejected }} rejected · {{ stats.withdrawn }} withdrawn.
+    </p>
+    {% endif %}
+</div>
+
+<div class="detail-layout mt-16">
+    <div class="card">
+        <div class="card-header">
+            <h2>Recent Applications</h2>
+            <a href="{{ url_for('candidate.applications') }}">View all →</a>
+        </div>
+
+        {% if recent_applications %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Job</th>
+                    <th>Score</th>
+                    <th>Status</th>
+                    <th>Applied</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in recent_applications %}
+                <tr>
+                    <td>{{ app.job_title }}</td>
+                    <td>{{ score_pill(app) }}</td>
+                    <td><span class="status-tag status-tag-{{ app.status }}">{{ app.status }}</span></td>
+                    <td class="text-muted">{{ app.applied_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">
+            No applications yet.
+            {% if has_resume %}
+                <a href="{{ url_for('candidate.jobs') }}">Browse open jobs</a> to get started.
+            {% else %}
+                <a href="{{ url_for('candidate.resume_versions') }}">Upload a resume</a> first, then apply to jobs.
+            {% endif %}
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2>Profile</h2></div>
+        <form method="POST" action="{{ url_for('candidate.dashboard') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-16">
+                <label for="name">Full name</label>
+                <input type="text" id="name" name="name" value="{{ user.name }}" required>
+            </div>
+
+            <div class="mb-16">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" value="{{ user.email }}" required>
+            </div>
+
+            <p class="text-muted profile-password-hint">Leave the fields below blank to keep your current password.</p>
+
+            <div class="mb-16">
+                <label for="current_password">Current password</label>
+                <input type="password" id="current_password" name="current_password" autocomplete="current-password">
+            </div>
+
+            <div class="mb-16">
+                <label for="new_password">New password</label>
+                <input type="password" id="new_password" name="new_password" minlength="6" autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

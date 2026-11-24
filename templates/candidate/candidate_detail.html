@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application.candidate_name }} — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/recruiter.css') }}">
+{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('recruiter.candidates', job_id=application.job_id) }}" class="back-link">← Back to candidates</a>
+
+<div class="detail-header">
+    <div>
+        <h1>{{ application.candidate_name }}</h1>
+        <p class="text-muted">
+            {{ application.candidate_email }} · Applied for~
+            <strong>{{ application.job_title }}</strong>
+        </p>
+    </div>
+    <div class="detail-header-score">
+        <div class="score-pill score-pill-lg">{{ application.match_score }}/100</div>
+        <span class="status-tag status-tag-{{ application.status }}">{{ application.status }}</span>
+    </div>
+</div>
+
+<div class="detail-layout">
+    <div class="detail-main">
+
+        {# ---------------- Explainable score breakdown (Section 10) ---------------- #}
+        <div class="card">
+            <div class="card-header"><h2>Score Breakdown</h2></div>
+            <table class="score-table">
+                <tbody>
+                    <tr>
+                        <td>Required Skills</td>
+                        <td class="score-cell">{{ application.skill_score }} / 40</td>
+                    </tr>
+                    <tr>
+                        <td>Experience</td>
+                        <td class="score-cell">{{ application.experience_score }} / 20</td>
+                    </tr>
+                    <tr>
+                        <td>Education</td>
+                        <td class="score-cell">{{ application.education_score }} / 15</td>
+                    </tr>
+                    <tr>
+                        <td>Relevant Projects</td>
+                        <td class="score-cell">{{ application.project_score }} / 10</td>
+                    </tr>
+                    <tr>
+                        <td>Certifications</td>
+                        <td class="score-cell">{{ application.certification_score }} / 5</td>
+                    </tr>
+                    <tr>
+                        <td>Resume / Role Relevance</td>
+                        <td class="score-cell">{{ application.relevance_score }} / 10</td>
+                    </tr>
+                    <tr class="score-total-row">
+                        <td>Total</td>
+                        <td class="score-cell">{{ application.match_score }} / 100</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        {# ---------------- Matched / missing skills ---------------- #}
+        <div class="card mt-16">
+            <div class="card-header"><h2>Skills</h2></div>
+            <div class="skills-columns">
+                <div>
+                    <h3 class="skills-subhead skills-matched">Matched</h3>
+                    {% if matched_skills %}
+                    <ul class="skill-list">
+                        {% for skill in matched_skills %}
+                        <li class="skill-chip skill-chip-matched">✓ {{ skill }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">No matched skills recorded yet.</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <h3 class="skills-subhead skills-missing">Missing</h3>
+                    {% if missing_skills %}
+                    <ul class="skill-list">
+                        {% for skill in missing_skills %}
+                        <li class="skill-chip skill-chip-missing">✗ {{ skill }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">No missing skills recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# ---------------- Duplicate & consistency review (Sections 6-7) ---------------- #}
+        <div class="card mt-16">
+            <div class="card-header"><h2>Duplicate &amp; Consistency Review</h2></div>
+
+            <div class="review-block">
+                <strong>Duplicate detection:</strong>
+                {% if application.duplicate_flag %}
+                    <span class="flag-tag flag-duplicate">
+                        Highly similar resume detected ({{ application.duplicate_similarity }}% similarity)
+                    </span>
+                    <p class="text-muted review-note">
+                        This means the resume closely matches another stored resume — it does not
+                        by itself mean the candidate is being dishonest. Shared project descriptions
+                        between classmates, for example, are expected and not evidence of fraud.
+                    </p>
+                {% else %}
+                    <span class="flag-tag flag-clear">No duplicate detected</span>
+                {% endif %}
+            </div>
+
+            <div class="review-block">
+                <strong>Consistency check:</strong>
+                {% if application.consistency_flag %}
+                    <span class="flag-tag flag-consistency">Potential inconsistency detected</span>
+                    <p class="text-muted review-note">
+                        {{ application.consistency_notes or "Recruiter verification recommended." }}
+                    </p>
+                {% else %}
+                    <span class="flag-tag flag-clear">No inconsistencies found</span>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="detail-sidebar">
+
+        {# ---------------- Actions ---------------- #}
+        <div class="card">
+            <div class="card-header"><h2>Decision</h2></div>
+            <form method="POST"
+                  action="{{ url_for('recruiter.update_application_status', application_id=application.id) }}"
+                  class="decision-form">
+                <button type="submit" name="status" value="shortlisted" class="btn btn-success btn-block">
+                    Shortlist
+                </button>
+                <button type="submit" name="status" value="rejected" class="btn btn-danger btn-block">
+                    Reject
+                </button>
+                {% if application.status != "pending" %}
+                <button type="submit" name="status" value="pending" class="btn-link">
+                    Reset to pending
+                </button>
+                {% endif %}
+            </form>
+        </div>
+
+        {# ---------------- Resume versions (Section 8) ---------------- #}
+        <div class="card mt-16">
+            <div class="card-header"><h2>Resume Used</h2></div>
+            {% if application.resume_path %}
+            <p>
+                {# resume_path is always stored relative to /static/, e.g.
+                   "uploads/resumes/<file>.pdf" — see modules/candidate.py's
+                   upload_resume(), which is the only writer of this column. #}
+                <a href="{{ url_for('static', filename=application.resume_path) }}"
+                   target="_blank" rel="noopener">
+                    Open submitted resume ↗
+                </a>
+            </p>
+            {% else %}
+            <p class="text-muted">No resume file on record.</p>
+            {% endif %}
+
+            {% if resume_versions|length > 1 %}
+            <h3 class="skills-subhead">Version History</h3>
+            <ul class="version-list">
+                {% for v in resume_versions %}
+                <li>
+                    v{{ v.version_number }} — <span class="text-muted">{{ v.created_at }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

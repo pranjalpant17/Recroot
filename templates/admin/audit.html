@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Log — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>Audit Log</h1>
+<p class="text-muted mb-16">{{ total_entries }} recorded events, most recent first.</p>
+
+<div class="card">
+    {% if entries %}
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td class="text-muted">{{ entry.timestamp }}</td>
+                <td>
+                    {% if entry.user_name %}
+                        {{ entry.user_name }}
+                        <span class="role-tag role-tag-{{ entry.user_role }}">{{ entry.user_role }}</span>
+                    {% elif entry.action.startswith('system_') %}
+                        System
+                    {% else %}
+                        <span class="text-muted">Unknown user</span>
+                    {% endif %}
+                </td>
+                <td>{{ entry.action }}</td>
+                <td class="text-muted">{{ entry.details }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        {% if page > 1 %}
+            <a href="{{ url_for('admin.audit', page=page - 1) }}">← Previous</a>
+        {% else %}
+            <span class="pagination-disabled">← Previous</span>
+        {% endif %}
+
+        <span class="text-muted">Page {{ page }} of {{ total_pages }}</span>
+
+        {% if page < total_pages %}
+            <a href="{{ url_for('admin.audit', page=page + 1) }}">Next →</a>
+        {% else %}
+            <span class="pagination-disabled">Next →</span>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="text-muted">No audit events recorded yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

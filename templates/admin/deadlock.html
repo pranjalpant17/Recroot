@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+
+{% block title %}Deadlock Monitor — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Deadlock Monitoring &amp; Recovery</h1>
+        <p class="text-muted">
+            What the background worker actually experienced with MySQL lock
+            conflicts, and how it recovered. The optional simulation is at the
+            bottom, clearly separate.
+        </p>
+    </div>
+    {% if not posted %}
+    <label class="refresh-toggle" for="auto-refresh">
+        <input type="checkbox" id="auto-refresh" checked>
+        Auto-refresh every {{ refresh_seconds }}s
+    </label>
+    {% endif %}
+</div>
+
+{# ---------- Overall health (derived only from the real counters) ---------- #}
+<div class="card mb-16" id="health">
+    <div class="monitor-state">
+        <span class="status-tag status-tag-{{ view.health.state }}">{{ view.health.label }}</span>
+        <span>{{ view.health.message }}</span>
+    </div>
+</div>
+
+{# ---------- REAL: counters ---------- #}
+<div class="card mb-16" id="real-events">
+    <div class="card-header">
+        <h2>Real MySQL lock events</h2>
+        <span><strong>REAL</strong> · counted from actual database errors</span>
+    </div>
+
+    <div class="stat-grid">
+        <div class="card stat-card">
+            <div class="stat-value">{{ real.deadlocks }}</div>
+            <div class="stat-label">Deadlocks</div>
+            <div class="stat-sub">MySQL error 1213</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value">{{ real.lock_timeouts }}</div>
+            <div class="stat-label">Lock wait timeouts</div>
+            <div class="stat-sub">MySQL error 1205</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value">{{ real.retries }}</div>
+            <div class="stat-label">Retry attempts</div>
+            <div class="stat-sub">whole transaction re-run</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value">{{ real.rollbacks }}</div>
+            <div class="stat-label">Rollbacks</div>
+            <div class="stat-sub">{{ real.rollback_failures }} failed</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value">{{ real.recovered }}</div>
+            <div class="stat-label">Successful recoveries</div>
+            <div class="stat-sub">
+                {% if view.recovery_percent is not none %}
+                {{ real.recovered }} of {{ view.tasks_concluded }} affected tasks ({{ view.recovery_percent }}%)
+                {% else %}no affected task has finished yet{% endif %}
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-value">{{ real.exhausted }}</div>
+            <div class="stat-label">Gave up</div>
+            <div class="stat-sub">retries exhausted, task marked failed</div>
+        </div>
+    </div>
+
+    <p class="mt-16">
+        In-process Python lock wait timeouts (not MySQL): <strong>{{ real.python_lock_timeouts }}</strong>.
+        Counting since <strong>{{ real.since_text }}</strong> (this server process started or was reset then).
+    </p>
+    <p class="field-hint">
+        Every number here comes from an error MySQL actually raised to a worker
+        thread, or from what the retry code then actually did. Nothing is
+        estimated or pre-filled, and running the simulation below never changes
+        them. They live in this process's memory, reset when the server
+        restarts, and cover only the background worker's database work, not
+        web-request code or other server processes.
+    </p>
+</div>
+
+{# ---------- REAL: worker status ---------- #}
+<div class="card mb-16" id="worker-status">
+    <div class="card-header">
+        <h2>Worker status</h2>
+        <span><strong>REAL</strong> · live from the worker pool · <a href="{{ url_for('admin.worker_monitor') }}">full Worker Monitor</a></span>
+    </div>
+    <div class="monitor-state">
+        <span class="status-tag status-tag-{{ view.worker.status }}">{{ view.worker.status_label }}</span>
+        <span>{{ view.worker.status_message }}</span>
+    </div>
+    {% if view.worker.warnings %}
+    <ul class="monitor-warnings">
+        {% for warning in view.worker.warnings %}<li>{{ warning }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="table-scroll mt-16">
+        <table>
+            <tbody>
+                <tr><td>Worker threads alive / pool size</td>
+                    <td class="num">{{ view.worker.threads_alive }} / {{ view.worker.pool_size }}</td></tr>
+                <tr><td>Active / idle workers</td>
+                    <td class="num">{{ view.worker.active_workers }} / {{ view.worker.idle_workers }}</td></tr>
+                <tr><td>Queue depth</td>
+                    <td class="num">{{ view.worker.queue_depth }} / {{ view.worker.queue_capacity }}</td></tr>
+                <tr><td>Tasks in flight</td><td class="num">{{ view.worker.in_flight }}</td></tr>
+                <tr><td>Tasks completed / failed</td>
+                    <td class="num">{{ view.worker.completed }} / {{ view.worker.failed }}</td></tr>
+                <tr><td>Scheduling algorithm (unchanged by this page)</td>
+                    <td class="num">{{ view.worker.policy }}</td></tr>
+                <tr><td>Retry limit per task</td>
+                    <td class="num">{{ view.worker.max_retries if view.worker.max_retries is not none else '—' }}</td></tr>
+                <tr><td>Base retry backoff</td>
+                    <td class="num">{% if view.worker.retry_backoff_seconds is not none %}{{ view.worker.retry_backoff_seconds }} s (doubles, jittered){% else %}—{% endif %}</td></tr>
+                <tr><td>MySQL lock wait limit (worker connections)</td>
+                    <td class="num">{% if view.worker.lock_wait_timeout_seconds %}{{ view.worker.lock_wait_timeout_seconds }} s{% else %}server default{% endif %}</td></tr>
+                <tr><td>Last recovery sweep</td>
+                    <td class="num">
+                        {% if view.worker.last_recovery %}
+                        {{ view.worker.last_recovery.at_text }}: found {{ view.worker.last_recovery.found }},
+                        re-queued {{ view.worker.last_recovery.enqueued }},
+                        left for later {{ view.worker.last_recovery.left_for_later }}
+                        {% else %}none since this process started{% endif %}
+                    </td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ---------- REAL: event log ---------- #}
+<div class="card mb-16" id="event-log">
+    <div class="card-header">
+        <h2>Recent real events</h2>
+        <span><strong>REAL</strong> · newest first</span>
+    </div>
+    {% if view.events %}
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th><th>Event</th><th>Where</th><th>Worker thread</th>
+                    <th>Attempt</th><th>What the worker did</th><th>MySQL message</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in view.events %}
+                <tr>
+                    <td class="text-muted">{{ e.at_text }}</td>
+                    <td>{{ e.kind_label }}</td>
+                    <td>{{ e.where }}</td>
+                    <td class="text-muted">{{ e.thread }}</td>
+                    <td>{{ e.attempt_text }}</td>
+                    <td>{{ e.action }}</td>
+                    <td class="text-muted">{{ e.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="field-hint">
+        Showing {{ view.events|length }} of the {{ view.events_total_kept }} most
+        recent events kept in memory (the log holds at most 200).
+    </p>
+    {% else %}
+    <p class="text-muted">
+        No lock events recorded. No MySQL deadlock or lock wait timeout has
+        reached the worker since counting began, which is the normal state.
+    </p>
+    {% endif %}
+</div>
+
+{# ---------- REAL: what the database remembers ---------- #}
+<div class="card mb-16" id="persisted">
+    <div class="card-header">
+        <h2>Persisted in the database</h2>
+        <span><strong>REAL</strong> · read-only queries · survives restarts</span>
+    </div>
+    {% if persisted.available %}
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr><th>Queued</th><th>Processing</th><th>Done</th><th>Failed</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ persisted.processing_counts.queued }}</td>
+                    <td>{{ persisted.processing_counts.processing }}</td>
+                    <td>{{ persisted.processing_counts.done }}</td>
+                    <td>{{ persisted.processing_counts.failed }}</td>
+                    <td>{{ persisted.processing_counts.total }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <h3 class="mt-16">Latest processing failures (audit log)</h3>
+    {% if persisted.recent_failures %}
+    <div class="table-scroll">
+        <table>
+            <thead><tr><th>Time</th><th>Details</th><th>Cause</th></tr></thead>
+            <tbody>
+                {% for f in persisted.recent_failures %}
+                <tr>
+                    <td class="text-muted">{{ f.timestamp }}</td>
+                    <td>{{ f.details }}</td>
+                    <td>{% if f.lock_related %}MySQL lock error (1213/1205){% else %}<span class="text-muted">other cause</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No processing failures have been recorded in the audit log.</p>
+    {% endif %}
+    <p class="field-hint">
+        Failures here can have any cause; a row is marked as a lock error only
+        when its stored text contains MySQL error 1213 or 1205. Failed
+        applications are re-queued by the recovery sweep at server start.
+    </p>
+    {% else %}
+    <p class="text-muted">
+        The database view is unavailable right now ({{ persisted.error }}). The
+        live counters above are not affected.
+    </p>
+    {% endif %}
+</div>
+
+{# ---------- REAL TEST: genuine MySQL deadlock on a dedicated table ---------- #}
+<div class="card mb-16" id="real-test">
+    <div class="card-header">
+        <h2>Real deadlock test</h2>
+        <span><strong>REAL TEST</strong> · genuine MySQL deadlock · dedicated test table only</span>
+    </div>
+
+    <p class="mb-16">
+        Opens two separate database connections and makes two transactions lock
+        two rows in opposite order, so MySQL itself detects the deadlock
+        (error 1213), rolls one transaction back, and the retry code recovers
+        it. It uses only the table <code>{{ real_test.table if real_test and real_test.table else 'zz_recroot_deadlock_test' }}</code>,
+        never candidate, application, job or user data, and drops nothing.
+        It is not a simulation, and it is not counted in the worker figures
+        above.
+    </p>
+
+    <form method="post" action="{{ url_for('admin.deadlock_real_test') }}"
+          onsubmit='return confirm({{ "Run a real deadlock test? It creates the small test table zz_recroot_deadlock_test if it is missing and runs two transactions that deadlock on purpose. No Recroot data is touched. This takes a few seconds."|tojson }});'>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-primary">Run Real Deadlock Test</button>
+    </form>
+
+    {% if real_test %}
+    <div class="mt-16" id="real-test-result">
+        <div class="monitor-state">
+            <span class="status-tag status-tag-{{ real_test.outcome }}">{{ real_test.outcome_label }}</span>
+            <span>{{ real_test.summary }}</span>
+        </div>
+        <p class="field-hint">
+            Run at {{ real_test.started_at_text }} against database
+            <strong>{{ real_test.database }}</strong>, table <strong>{{ real_test.table }}</strong>
+            {% if real_test.table_created_now %}(created by this run){% endif %},
+            {{ '%.2f'|format(real_test.elapsed_seconds or 0) }} s.
+            {% if real_test.server.version %}MySQL {{ real_test.server.version }}
+            (deadlock detection: {{ real_test.server.deadlock_detect or 'unknown' }}).{% endif %}
+            This is the most recent real test since the server started; it is kept in memory only.
+        </p>
+
+        {% if real_test.checks %}
+        <h3 class="mt-16">Checks</h3>
+        <div class="table-scroll">
+            <table>
+                <tbody>
+                    {% for c in real_test.checks %}
+                    <tr><td><strong>{{ c.mark }}</strong></td><td>{{ c.label }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="mt-16">The two transactions</h3>
+        <div class="table-scroll">
+            <table>
+                <thead><tr><th>Transaction</th><th>Attempts</th><th>Result</th><th>What happened</th></tr></thead>
+                <tbody>
+                    {% for t in real_test.threads %}
+                    <tr>
+                        <td>{{ t.name }}</td>
+                        <td>{{ t.attempts }}</td>
+                        <td>{{ 'committed' if t.committed else 'did not commit' }}</td>
+                        <td>{{ t.role }}{% if t.error %} ({{ t.error }}){% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% endif %}{# checks: the two transaction sections below only make sense if it ran #}
+
+        {% if real_test.checks %}
+        <h3 class="mt-16">Real MySQL events from this test only</h3>
+        {% if real_test.test_event_rows %}
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr><th>Event</th><th>Transaction</th><th>Attempt</th><th>What was done</th><th>MySQL message</th></tr>
+                </thead>
+                <tbody>
+                    {% for e in real_test.test_event_rows %}
+                    <tr>
+                        <td>{{ e.kind_label }}</td>
+                        <td>{{ e.where }}</td>
+                        <td>{{ e.attempt_text }}</td>
+                        <td>{{ e.action }}</td>
+                        <td class="text-muted">{{ e.message }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">MySQL raised no lock error in this run.</p>
+        {% endif %}
+        <p class="field-hint">
+            Test counters (private to this test): deadlocks (1213) {{ real_test.test_counters.deadlocks or 0 }},
+            lock wait timeouts (1205) {{ real_test.test_counters.lock_timeouts or 0 }},
+            retries {{ real_test.test_counters.retries or 0 }},
+            rollbacks {{ real_test.test_counters.rollbacks or 0 }},
+            recoveries {{ real_test.test_counters.recovered or 0 }}.
+        </p>
+
+        {% endif %}
+
+        {% if real_test.timeline %}
+        <h3 class="mt-16">Timeline</h3>
+        <div class="table-scroll">
+            <table>
+                <thead><tr><th>Time (s)</th><th>Who</th><th>What happened</th></tr></thead>
+                <tbody>
+                    {% for e in real_test.timeline %}
+                    <tr>
+                        <td class="text-muted">{{ '%.3f'|format(e.t) }}</td>
+                        <td>{{ e.actor }}</td>
+                        <td>{{ e.message }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% endif %}
+
+        {% if real_test.checks %}
+        <h3 class="mt-16">Test rows after both transactions</h3>
+        {% if real_test.final_rows %}
+        <div class="table-scroll">
+            <table>
+                <thead><tr><th>Row id</th><th>Label</th><th>Counter (expected 2)</th></tr></thead>
+                <tbody>
+                    {% for r in real_test.final_rows %}
+                    <tr><td>{{ r.id }}</td><td>{{ r.label }}</td><td>{{ r.counter }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No rows were read.</p>
+        {% endif %}
+        {% endif %}
+
+        {% if real_test.innodb_report %}
+        <details class="mt-16">
+            <summary>MySQL's own deadlock report (SHOW ENGINE INNODB STATUS)</summary>
+            <p class="field-hint">{{ real_test.innodb_report_note }}</p>
+            <pre style="white-space: pre-wrap; overflow-x: auto;">{{ real_test.innodb_report }}</pre>
+        </details>
+        {% elif real_test.innodb_report_note %}
+        <p class="field-hint mt-16">{{ real_test.innodb_report_note }}</p>
+        {% endif %}
+
+        <p class="field-hint mt-16">
+            {% if real_test.cleanup.skipped %}
+            Nothing was created, so nothing needed cleaning up. No table was created or changed.
+            {% else %}
+            Cleanup: {{ real_test.cleanup.deleted or 0 }} test row(s) deleted,
+            {{ real_test.cleanup.remaining if real_test.cleanup.remaining is not none else 'unknown' }} remaining
+            {% if real_test.cleanup.ok %}(verified){% else %}(NOT verified{% if real_test.cleanup.error %}: {{ real_test.cleanup.error }}{% endif %}){% endif %}.
+            The test table is kept, empty, for next time.
+            {% endif %}
+        </p>
+    </div>
+    {% else %}
+    <p class="text-muted mt-16">No real deadlock test has been run in this server process yet.</p>
+    {% endif %}
+</div>
+
+{# ---------- SIMULATED: optional, separate ---------- #}
+<details class="card mb-16" id="simulation"{% if result %} open{% endif %}>
+    <summary><h2 style="display:inline">Optional: deadlock simulation</h2>
+        &nbsp;<strong>SIMULATED</strong> · not real database activity</summary>
+
+    <div class="flash flash-info mt-16 mb-16">
+        <strong>SIMULATION ONLY.</strong> These demos use two brand-new
+        in-memory locks created for each click. They never touch the database,
+        the worker pool, or any lock the application uses, every wait has a
+        timeout, and they are <strong>not</strong> counted in any figure above.
+    </div>
+
+    <div class="form-row">
+        <form method="post" action="{{ url_for('admin.deadlock_simulate') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary">Simulate Deadlock</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.deadlock_prevention') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary">Run Prevention Demo</button>
+        </form>
+    </div>
+    <p class="field-hint">
+        Simulate Deadlock: Thread 1 takes lock A then wants B; Thread 2 takes B
+        then wants A. Run Prevention Demo: both threads need A and B but always
+        take them in the same order (A, then B).
+    </p>
+
+    {% if result %}
+    <div id="demo-result" class="mt-16">
+        <h3>{{ result.title }} <span class="text-muted">(SIMULATED · in-memory locks · no database)</span></h3>
+        <p class="mb-16">
+            <strong>Outcome:</strong>
+            {% if result.outcome == 'deadlock_detected' %}Deadlock reproduced (circular wait), ended by timeout
+            {% elif result.outcome == 'completed_without_deadlock' %}Both threads completed, no deadlock
+            {% elif result.outcome == 'busy' %}Not run: another demo is in progress
+            {% elif result.outcome == 'no_deadlock' %}No deadlock formed this time
+            {% else %}Demo did not complete normally{% endif %}
+        </p>
+        <p class="mb-16">{{ result.summary }}</p>
+        {% if result.events %}
+        <div class="table-scroll">
+            <table>
+                <thead><tr><th>Time (s)</th><th>Thread</th><th>What happened</th></tr></thead>
+                <tbody>
+                    {% for event in result.events %}
+                    <tr>
+                        <td class="text-muted">{{ '%.3f'|format(event.t) }}</td>
+                        <td>{{ event.actor }}</td>
+                        <td>{{ event.message }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        <p class="field-hint">
+            Total {{ '%.2f'|format(result.elapsed_seconds) }} s · timeout
+            {{ result.timeout_seconds }} s per wait ·
+            {{ 'all locks released and threads finished' if result.cleaned_up else 'WARNING: cleanup incomplete' }}.
+        </p>
+    </div>
+    {% endif %}
+</details>
+{% endblock %}
+
+{% block extra_js %}
+{% if not posted %}
+<script>
+(function () {
+    var box = document.getElementById('auto-refresh');
+    if (!box) { return; }
+    var delay = {{ refresh_ms|int }};
+    var timer = null;
+
+    try {
+        if (window.sessionStorage.getItem('recrootDeadlockRefresh') === 'off') {
+            box.checked = false;
+        }
+    } catch (e) { /* storage unavailable: keep the default (on) */ }
+
+    function schedule() {
+        if (timer) { clearTimeout(timer); timer = null; }
+        if (box.checked) {
+            timer = setTimeout(function () { window.location.reload(); }, delay);
+        }
+    }
+
+    box.addEventListener('change', function () {
+        try {
+            window.sessionStorage.setItem('recrootDeadlockRefresh', box.checked ? 'on' : 'off');
+        } catch (e) { /* ignore */ }
+        schedule();
+    });
+
+    schedule();
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users — Recroot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>Manage Users</h1>
+<p class="text-muted mb-16">Create, view and remove admin, recruiter and candidate accounts.</p>
+
+<div class="admin-layout">
+    <div class="card">
+        <div class="card-header">
+            <h2>All Users ({{ users|length }})</h2>
+        </div>
+
+        {% if users %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Joined</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td><span class="role-tag role-tag-{{ user.role }}">{{ user.role }}</span></td>
+                    <td class="text-muted">{{ user.created_at }}</td>
+                    <td>
+                        <form
+                            method="POST"
+                            action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                            onsubmit='return confirm({{ ("Delete " ~ user.name ~ "? This cannot be undone.")|tojson }});'
+                        >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-link-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">No users yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Create User</h2>
+        </div>
+        <form method="POST" action="{{ url_for('admin.users') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-16">
+                <label for="name">Full name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+
+            <div class="mb-16">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="mb-16">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" minlength="6" required>
+            </div>
+
+            <div class="mb-16">
+                <label for="role">Role</label>
+                <select id="role" name="role" required>
+                    <option value="" disabled selected>Select a role</option>
+                    <option value="admin">Admin</option>
+                    <option value="recruiter">Recruiter</option>
+                    <option value="candidate">Candidate</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Create User</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

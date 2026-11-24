@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Recroot{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    {# --------------------------------------------------------
+       Top nav — only rendered for a logged-in session. Role-
+       specific dashboard links are built directly since, by the
+       time a user is logged in, admin.py / recruiter.py /
+       candidate.py (Steps 11/17/23) will exist. login.html
+       (the only page that renders before those modules exist)
+       is never viewed with an active session, so this block is
+       safe at every stage of the build.
+       -------------------------------------------------------- #}
+    {% if session.get('user_id') %}
+    <nav class="navbar">
+        <span class="brand">Recroot</span>
+        <div class="nav-links">
+            {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('admin.users') }}">Users</a>
+                <a href="{{ url_for('admin.jobs') }}">Jobs</a>
+                <a href="{{ url_for('admin.audit') }}">Audit Log</a>
+                <a href="{{ url_for('admin.analytics') }}">Analytics</a>
+                <a href="{{ url_for('admin.worker_monitor') }}">Worker</a>
+                <a href="{{ url_for('admin.scheduler') }}">Scheduling</a>
+                <a href="{{ url_for('admin.deadlock_page') }}">Deadlock Monitor</a>
+            {% elif session.get('role') == 'recruiter' %}
+                <a href="{{ url_for('recruiter.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('recruiter.jobs') }}">Jobs</a>
+                <a href="{{ url_for('recruiter.candidates') }}">Candidates</a>
+            {% elif session.get('role') == 'candidate' %}
+                <a href="{{ url_for('candidate.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('candidate.jobs') }}">Jobs</a>
+                <a href="{{ url_for('candidate.applications') }}">Applications</a>
+                <a href="{{ url_for('candidate.resume_versions') }}">Resumes</a>
+            {% endif %}
+        </div>
+        <div class="nav-user">
+            <span class="role-badge">{{ session.get('role') }}</span>
+            <span>{{ session.get('name') }}</span>
+            <a href="{{ url_for('auth.logout') }}">Log out</a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="page-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <ul class="flash-list">
+                {% for category, message in messages %}
+                <li class="flash flash-{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
